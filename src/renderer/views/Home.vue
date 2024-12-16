@@ -1,11 +1,16 @@
 <template>
   <div>
     <div class="content">
+      <div class="form-row">
+        <label>
+          <input type="checkbox" v-model="hideExported" /> 隐藏已导出
+        </label>
+      </div>
       <ul class="folder-list">
-        <li v-for="(item, index) in folderList" :key="index" @click="selectData(item)" :class="{'focused': currentFolder.absolutePath === item.absolutePath}">
+        <li v-for="(item, index) in folderList" v-show="!hideExported || !item.hasExport" :key="index" @click="selectData(item)" :class="{'focused': currentFolder.absolutePath === item.absolutePath}">
           <span style="width: 200px;">{{ item.name }}</span>
-          <span style="width: 70px; margin-right: 5px;" :class="item.hasConfig ? 'configed' : 'none-configed'"></span>
-          <span style="width: 70px;" :class="item.hasExport ? 'exported' : 'unexported'"></span>
+          <span style="width: 70px; margin-right: 5px; white-space: nowrap;" :class="item.hasConfig ? 'configed' : 'none-configed'"></span>
+          <span style="width: 70px; white-space: nowrap;" :class="item.hasExport ? 'exported' : 'unexported'"></span>
           <span @click.stop="openFolderInExplorer(item.absolutePath)" class="folder-icon">
             <i class="fa-regular fa-folder" aria-hidden="true"></i>
           </span>
@@ -22,7 +27,9 @@
         <input :disabled="!currentFolder.absolutePath" type="text" v-model="currentFolder.dataXlsxDir" readonly @click="selectFile('dataXlsxDir')" />
       </div>
       <div class="form-row">
-        <label>表格</label>
+        <label>表格          <span @click="openDataXlsx" class="folder-icon" v-if="currentFolder.dataXlsxDir">
+          <i class="fa-regular fa-file" aria-hidden="true"></i>
+        </span></label>
         <select v-model="currentFolder.table" :disabled="!currentFolder.sheetNames">
           <option value="" disabled>请选择表格</option>
           <option v-for="(sheet, index) in currentFolder.sheetNames" :key="index" :value="sheet">{{ sheet }}</option>
@@ -48,7 +55,7 @@
 </template>
 
 <script>
-const { ipcRenderer } = window.require('electron');
+const { ipcRenderer, shell } = window.require('electron');
 const fs = require('fs');
 const path = require('path');
 import '@fortawesome/fontawesome-free/css/all.min.css';
@@ -58,6 +65,7 @@ import { useGlobalStore } from '../stores/global';
 export default {
   data() {
     return {
+      hideExported: false, 
       folderList: [],
       currentFolder: {}
     };
@@ -137,6 +145,18 @@ export default {
         alert('无法读取Excel文件');
       }
     },
+    async openDataXlsx(){
+      const { dataXlsxDir } = this.currentFolder;
+      if ((dataXlsxDir || '') !== '') {
+        const config = await ipcRenderer.invoke('get-config');
+        const dataXlsxAb = path.join(config.sourceFolder, dataXlsxDir);
+
+        shell.openPath(dataXlsxAb).then(() => {
+            }).catch((err) => {
+            console.error('Error opening file:', err);
+            });
+      }
+    },
     openFolderInExplorer(folderPath) {
       const { ipcRenderer } = window.require('electron');
       try {
@@ -151,12 +171,7 @@ export default {
         const config = await ipcRenderer.invoke('get-config');
         const outputDirAb = path.join(config.exportFolder, outputDir);
 
-        try {
-          await fs.access(outputDirAb);
-          this.openFolderInExplorer(outputDirAb);
-        } catch (error) {
-          console.error('目录不存在或无法访问:', outputDirAb);
-        }
+        this.openFolderInExplorer(outputDirAb);
       }
     },
     async selectData(item) {
@@ -340,7 +355,7 @@ export default {
   margin: 0;
   margin-bottom: 20px;
   padding: 10px;
-  height: calc(100vh - 300px);
+  height: calc(100vh - 320px);
   background-color: #F8F8F8;
   overflow-y: auto;
   border-radius: 6px;
@@ -351,7 +366,7 @@ export default {
   color: #ccc;
   display: flex;
   justify-content: center;
-  height: calc(100vh - 300px);
+  height: calc(100vh - 320px);
   align-items: center;
 }
 

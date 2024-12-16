@@ -1,35 +1,45 @@
-<script setup lang="ts">
-import viteLogo from './assets/vite.svg';
-import vueLogo from './assets/vue.svg';
-
-import HelloWorld from './components/HelloWorld.vue'
-
-window.electronAPI.sendMessage('Hello from App.vue!');
-</script>
-
 <template>
-  <div>
-    <a href="https://vitejs.dev" target="_blank">
-      <img :src="viteLogo" class="logo" alt="Vite logo" />
-    </a>
-    <a href="https://vuejs.org/" target="_blank">
-      <img :src="vueLogo" class="logo vue" alt="Vue logo" />
-    </a>
+  <div id="app">
+    <router-view />
   </div>
-  <HelloWorld msg="Vite + Vue" />
 </template>
 
-<style scoped>
-.logo {
-  height: 6em;
-  padding: 1.5em;
-  will-change: filter;
-  transition: filter 300ms;
+<script>
+const { ipcRenderer } = window.require('electron');
+
+export default {
+  name: 'App',
+  mounted() {
+    ipcRenderer.on('navigate', (event, route) => {
+      this.$router.push(`/${route}`);
+    });
+
+    ipcRenderer.on('refresh-folders', () => {
+      this.$root.$emit('refresh-folders');
+    });
+  },
+  beforeUnmount() {
+    ipcRenderer.removeAllListeners('navigate');
+    ipcRenderer.removeAllListeners('refresh-folders');
+  },
+};
+</script>
+
+<style>
+.content {
+  padding: 10px 30px;
 }
-.logo:hover {
-  filter: drop-shadow(0 0 2em #646cffaa);
+.subpage .content {
+  margin-top: 95px;
 }
-.logo.vue:hover {
-  filter: drop-shadow(0 0 2em #42b883aa);
+
+.buttons {
+  margin-top: 20px;
+  display: flex;
+  justify-content: space-around;
+}
+
+.buttons button {
+  width: 110px;
 }
 </style>

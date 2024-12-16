@@ -1,5 +1,5 @@
 {
-    "appId": "com.electron.app",
+    "appId": "net.lawaxi.zjczl",
     "directories": {
         "output": "dist"
     },
@@ -8,16 +8,23 @@
         "oneClick": false,
         "perMachine": false,
         "allowToChangeInstallationDirectory": true,
-        "shortcutName": "Electron App"
+        "shortcutName": "东组陶瓦整理"
+    },
+    "mac": {
+        "category": "public.app-category.utilities",
+        "icon": "resources/icon.ico",
+        "target": ["dmg", "zip"]
     },
     "win": {
-        "target": "nsis"
+        "target": "nsis",
+        "icon": "resources/icon.ico"
     },
-    "linux":  {
-        "target": ["snap"]
+    "linux": {
+        "target": ["AppImage", "deb", "snap"],
+        "icon": "resources/icon.png"
     },
-    "files": [
-        {
+    "asar": false,
+    "files": [{
             "from": "build/main",
             "to": "main",
             "filter": ["**/*"]
@@ -32,8 +39,13 @@
             "to": "static",
             "filter": ["**/*"]
         },
-	"!build",
-	"!dist",
-	"!scripts"
+        {
+            "from": "src/python",
+            "to": "python",
+            "filter": ["**/*.py"]
+        },
+        "!build",
+        "!dist",
+        "!scripts"
     ]
 }

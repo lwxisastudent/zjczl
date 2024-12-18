@@ -13,6 +13,7 @@ const defaultConfig = {
         ['不连续直绳纹+素面', '素面+不连续直绳纹'], // 筒瓦瓦尾
         ['瓦尾,凸面斜绳纹+素面', '瓦尾,凸面特殊'], // 筒瓦瓦尾
         ['瓦尾,凸面交叉绳纹+素面', '瓦尾,凸面特殊'], // 筒瓦瓦尾
+        ['瓦尾,凸面抹断斜绳纹+素面', '瓦尾,凸面特殊'], // 筒瓦瓦尾
         ['不明/内切', '不明'],
         ['不明/不可识别', '不明'],
         ['不明/全切', '不明'],
@@ -30,6 +31,9 @@ module.exports = {
     },
     saveConfig: (data) => {
         fs.writeFileSync(configPath, JSON.stringify(data, null, 2));
+    },
+    getDefaultConfig: () => {
+        return defaultConfig;
     },
     applyReplacements: (str) => {
         const config = module.exports.readConfig();

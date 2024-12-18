@@ -20,6 +20,7 @@
       <div class="form-row">
         <label>替换规则 (每行一项，格式：替换前|替换后)</label>
         <textarea v-model="replacementRulesText" placeholder="例如：瓦尾,凸面斜绳纹+素面|瓦尾,凸面特殊"></textarea>
+        <button @click="resetReplacementRule" style="margin: 0; margin-left: auto;">恢复默认</button>
       </div>
       <button @click="saveConfig">保存</button>
     </div>
@@ -80,6 +81,12 @@ export default {
     },
     resetPythonFile(){
       this.pythonFile = 'python';
+    },
+    async resetReplacementRule(){
+      const defaultConfig = await ipcRenderer.invoke('get-default-config');
+      this.replacementRulesText = (defaultConfig.replacementRules)
+        .map(rule => rule.join('|'))
+        .join('\n');
     },
     async saveConfig() {
       if (!this.sourceFolder || !this.exportFolder || !this.pythonFile) {

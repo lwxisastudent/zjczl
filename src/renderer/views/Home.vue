@@ -3,7 +3,7 @@
     <div class="content">
       <div class="form-row">
         <label>
-          <input type="checkbox" v-model="hideExported" /> 隐藏已导出
+          <input type="checkbox" v-model="hideExported" @change="updateHideExported" /> 隐藏已导出
         </label>
       </div>
       <ul class="folder-list">
@@ -23,13 +23,13 @@
         <input style="flex: 1;" type="text" v-model="currentFolder.accuno" placeholder="如：③"/>
       </div>
       <div class="form-row">
-        <label>表格文件</label>
+        <label>表格文件          <span @click="openDataXlsx" class="folder-icon" v-if="currentFolder.dataXlsxDir">
+          <i class="fa-regular fa-file" aria-hidden="true"></i>
+        </span></label>
         <input :disabled="!currentFolder.absolutePath" type="text" v-model="currentFolder.dataXlsxDir" readonly @click="selectFile('dataXlsxDir')" />
       </div>
       <div class="form-row">
-        <label>表格          <span @click="openDataXlsx" class="folder-icon" v-if="currentFolder.dataXlsxDir">
-          <i class="fa-regular fa-file" aria-hidden="true"></i>
-        </span></label>
+        <label>表格</label>
         <select v-model="currentFolder.table" :disabled="!currentFolder.sheetNames">
           <option value="" disabled>请选择表格</option>
           <option v-for="(sheet, index) in currentFolder.sheetNames" :key="index" :value="sheet">{{ sheet }}</option>
@@ -72,16 +72,17 @@ export default {
   },
   methods: {
     async refreshFolders() {
+      const store = useGlobalStore();
+      
+      const config = await ipcRenderer.invoke('get-config');
+      if (!config.sourceFolder || !config.exportFolder) {
+        alert('尚未配置原照片和到处目录，即将跳转到配置页！');
+        this.$router.push('/config');
+        return;
+      }
+      
       try {
-        const config = await ipcRenderer.invoke('get-config');
-        if (!config.sourceFolder || !config.exportFolder) {
-          alert('尚未配置原照片和到处目录，即将跳转到配置页！');
-          this.$router.push('/config');
-          return;
-        }
-
         const folders = await ipcRenderer.invoke('get-folders', config.sourceFolder, config.exportFolder);
-
         this.folderList = folders.map(folder => {
           const relativePath = path.relative(config.sourceFolder, folder.absolutePath).replace(/\\/g, '/');
 
@@ -98,7 +99,6 @@ export default {
           };
         });
 
-        const store = useGlobalStore();
         const currentIndex = store.getCurrentIndex();
         if (currentIndex >= 0 && currentIndex < this.folderList.length) {
           const selectedFolder = this.folderList[currentIndex];
@@ -112,6 +112,12 @@ export default {
       } catch (error) {
         console.error('获取配置失败:', error);
       }
+
+      this.hideExported = store.getHideExported() || true;
+    },
+    updateHideExported(){
+      const store = useGlobalStore();
+      store.setHideExported(this.hideExported);
     },
     async selectFile(key) {
       try {

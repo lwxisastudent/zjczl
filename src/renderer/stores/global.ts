@@ -2,7 +2,8 @@ import { defineStore } from 'pinia';
 
 export const useGlobalStore = defineStore('global', {
   state: () => ({
-    currentIndex: null, // 当前选中序号
+    currentIndex: null,
+    hideExported: true
   }),
   actions: {
     setCurrentIndex(index) {
@@ -11,5 +12,11 @@ export const useGlobalStore = defineStore('global', {
     getCurrentIndex() {
       return this.currentIndex;
     },
+    setHideExported(hideExported){
+      this.hideExported = hideExported;
+    },
+    getHideExported(){
+      return this.hideExported;
+    }
   },
 });

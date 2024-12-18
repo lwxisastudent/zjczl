@@ -44,21 +44,20 @@ def create_structure_mapping(structure_rows, structure_cols):
 
 # data.xlsx转化为固定分类项
 def extract_classification(row, replacement_rules):
-    col2 = row[1]
-    col3 = re.sub(r'/#[^/]*', '', row[2]).replace(",", "，").replace("＋", "+")
+    clz = row[1].strip() + ',' + re.sub(r'/#[^/]*', '', row[2]).strip().replace(",", "，").replace("＋", "+")
     for rule in replacement_rules:
         from_str, to_str = rule.split('|')
-        col3 = col3.replace(from_str, to_str)
+        clz = clz.replace(from_str, to_str)
 
     if row[0] == '筒瓦' and row[1] == '瓦头': #不管是什么瓦舌，去掉瓦舌的部分
-        if '凸面素面' in col3 and '外素面' not in col3:
-            return "瓦头,不明，" + col3[col3.find('凹面'):]
-        elif '凸面不明' in col3 or '不明瓦舌' in col3:
-            return "瓦头,不明，" + col3[col3.find('凹面'):]
-        elif '凸面特殊' in col3:
-            return "瓦头,特殊，" + col3[col3.find('凹面'):]
+        if '凸面素面' in clz and '外素面' not in clz:
+            return "瓦头,不明，" + clz[clz.find('凹面'):]
+        elif '凸面不明' in clz or '不明瓦舌' in clz:
+            return "瓦头,不明，" + clz[clz.find('凹面'):]
+        elif '凸面特殊' in clz:
+            return "瓦头,特殊，" + clz[clz.find('凹面'):]
 
-    return f"{col2},{col3.replace("凸面", "")}"
+    return clz.replace("凸面", "")
 
 def process_data(data, replacement_rules):
     tongwa_data = {}

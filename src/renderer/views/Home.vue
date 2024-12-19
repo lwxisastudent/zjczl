@@ -347,15 +347,35 @@ export default {
         console.error(`运行脚本失败: ${script}`, error);
       }
     },
-    goToCardPage() {
-      if (this.login && this.currentFolder.tanfangno && this.currentFolder.accuno) {
-        this.$router.push({
-          path: '/cardList',
-          query: {
-            tanfangno: this.currentFolder.tanfangno,
-            accuno: this.currentFolder.accuno
-          }
-        });
+    async goToCardPage() {
+      try {
+        const config = await ipcRenderer.invoke('get-config');
+        const dataXlsxDir = path.join(config.sourceFolder, this.currentFolder.dataXlsxDir);
+        const tableName = this.currentFolder.table;
+
+        if (!dataXlsxDir || !tableName) {
+          this.$router.push({
+            path: '/cardList',
+            query: {
+              tanfangno: this.currentFolder.tanfangno,
+              accuno: this.currentFolder.accuno
+            }
+          });
+          return;
+        }
+        else{
+          this.$router.push({
+            path: '/cardList',
+            query: {
+              tanfangno: this.currentFolder.tanfangno,
+              accuno: this.currentFolder.accuno,
+              dataXlsxDir: encodeURIComponent(dataXlsxDir),
+              tableName: encodeURIComponent(tableName)
+            }
+          });
+        }
+      } catch (error) {
+        alert('操作失败');
       }
     }
   },

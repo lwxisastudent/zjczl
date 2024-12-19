@@ -9,7 +9,8 @@ export const useGlobalStore = defineStore('global', {
         tanfangno: '',
         accuno: ''
       },
-      list: []
+      list: [],
+      otherParts: null
     }
   }),
   actions: {

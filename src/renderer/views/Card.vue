@@ -50,6 +50,7 @@
                 <div class="form-row">
                 <label>其他部位</label>
                 <input v-model="card.otherParts" />
+                <button @click="fillOtherParts">一键填写</button>
                 </div>
                 <div class="form-row">
                 <label>重量（克）</label>
@@ -137,6 +138,7 @@
   },
     data() {
       return {
+        item: null,
         card: null,
         loginInfo: null,
       };
@@ -149,13 +151,14 @@
       }
       this.loginInfo = loginInfo;
   
-      const item = this.$route.query;
+      const item = JSON.parse(this.$route.query.item);
       if (!item || !item.id) {
         this.$router.go(-1);
         return;
       }
-  
-      await this.fetchCard(item);
+
+      this.item = item;
+      await this.fetchCard();
     },
     methods: {
       async getLoginInfo() {
@@ -167,24 +170,48 @@
           return null;
         }
       },
-      async fetchCard(item) {
+      async fetchCard() {
+        const item = this.item;
         try {
             const loginInfo = this.loginInfo;
             const postData = {
-                id: item.id,
+              ...item,
+                token: loginInfo.token,
+                projectId: loginInfo.projectId,
+                userId: loginInfo.userId,
+                projectName: loginInfo.projectName,
+                proUserType: 3
+            };
+
+            delete postData.ctime2;
+  
+          const response = await axios.post(
+            "http://www.kggis.com/kgfj/qwcard/findByInterFinishing.htm",
+            postData,
+            { headers: { "Content-Type": "application/json" } }
+          );
+  
+          const data = response.data;
+          if (data) {
+            if(data.length > 0){
+              this.card = data[0];
+              this.card.ctime = this.formatDate(this.card.ctime.time);
+            }else{
+              this.card = {
+                id: "",
                 xiantuID: "",
                 zhaopianID: "",
                 isaudit: "",
                 ctqwglID: "",
                 danweino: item.danweino,
-                accuno: item.accuno,
+                accuno: "②",
                 utensilsno: item.utensilsno,
                 texture: item.texture,
                 name: item.name,
                 buwei: "",
                 tanfangno: item.tanfangno,
-                userName: loginInfo.userName,
-                ctime: item.ctime,
+                userName: item.userName,
+                ctime: this.formatDate(Date.now()),
                 repairuserName: "",
                 chutuAddress: "",
                 caliber: "",
@@ -195,7 +222,7 @@
                 otherParts: "",
                 weight: "",
                 capacity: "",
-                material: "11",
+                material: "",
                 forming: "",
                 dressing: "",
                 decoration: "",
@@ -213,29 +240,24 @@
                 remark: "",
                 specimen: "",
                 depositAddress: "",
-                isauditcontent: "",
-                token: loginInfo.token,
-                projectId: loginInfo.projectId,
-                userId: loginInfo.userId,
-                projectName: loginInfo.projectName,
-                proUserType: loginInfo.proUserType
-            };
-  
-          const response = await axios.post(
-            "http://www.kggis.com/kgfj/qwcard/findByInterFinishing.htm",
-            postData,
-            { headers: { "Content-Type": "application/json" } }
-          );
-  
-          const data = response.data;
-          if (data && data.length > 0) {
-            this.card = data[0];
-            this.card.ctime = this.formatDate(this.card.ctime.time);
+                isauditcontent: ""
+              }
+            }
           } else {
             console.error("未找到卡片信息");
           }
         } catch (error) {
           console.error("获取卡片信息失败:", error);
+        }
+      },
+      fillOtherParts() {
+        const otherPart = JSON.parse(this.$route.query.otherPart);
+        if (otherPart) {
+          const { type, part, width, height, thickness } = otherPart;
+          this.card.otherParts = `${type}${part}残片，残宽${width}cm，残高${height}cm，厚度${thickness}cm`;
+        } else {
+          this.card.otherParts = `残片，残宽cm，残高cm，厚度cm`;
+          alert("未传入表格信息或表格中不存在当前标本");
         }
       },
       goBack() {
@@ -245,6 +267,7 @@
         try {
           const postData = {
             ...this.card,
+            ctime: this.formatDate(Date.now()),
             userId: this.loginInfo.userId,
             userName: this.loginInfo.userName,
             token: this.loginInfo.token,
@@ -262,6 +285,7 @@
           const data = response.data;
           if (data.code === 0) {
             alert("保存成功");
+            this.fetchCard();
           } else {
             alert("保存失败，请重试");
           }
@@ -324,5 +348,16 @@
     flex-direction: column;
     margin-left: 5px;
   }
+  
+.form-row button {
+  margin-left: 10px;
+  height: 20px;
+  width: 80px;
+  white-space: nowrap;
+  line-height: 24px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
   </style>
   

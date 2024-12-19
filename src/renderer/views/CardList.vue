@@ -1,6 +1,6 @@
 <template>
   <div class="subpage">
-    <Header title="设置" @close="goHome" />
+    <Header title="器物管理" @close="goHome" />
 
 <div class="content">
   <label style="width: 100%">探方号          单位号          堆积号</label>

@@ -4,6 +4,7 @@ const fs = require('fs');
 const { exec } = require('child_process');
 const config = require('./config');
 const menu = require('./menu');
+const account = require('./account');
 
 let mainWindow;
 
@@ -13,7 +14,7 @@ app.whenReady().then(() => {
     height: 800,
     minHeight: 500,
     minWidth: 400,
-    maxWidth: 400,
+    maxWidth: process.env.NODE_ENV === 'development' ? 10000 : 400,
     icon: path.join(__dirname,'../../resources/icon.png'),
     webPreferences: {
       nodeIntegration: true,
@@ -153,4 +154,15 @@ ipcMain.handle('open-folder', (event, folderPath) => {
       console.error('Failed to open folder:', err);
     }
   });
+});
+
+ipcMain.handle('login', async (_, { userId, password }) => {
+  const r = await account.login(userId, password);
+  Menu.setApplicationMenu(menu(mainWindow));
+  return r;
+});
+ipcMain.handle('get-login-info', () => account.getLoginInfo());
+ipcMain.handle('get-projects', () => account.getProjects());
+ipcMain.handle('select-project', (_, projectId) => {
+  return account.selectProject(projectId);
 });

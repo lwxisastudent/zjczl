@@ -1,9 +1,12 @@
 <template>
-    <div class="header">
-      <span class="title">{{ title }}</span>
-      <button class="close-btn" @click="closeWindow">×</button>
-    </div>
-  </template>
+  <div class="header">
+    <span class="title">{{ title }}</span>
+    <button class="close-btn" @click="closeWindow">
+      <i :class="icon"></i>
+    </button>
+  </div>
+</template>
+
   
   <script>
   export default {
@@ -12,10 +15,13 @@
         type: String,
         required: true,
         },
+    icon: {
+      type: String,
+      default: 'fas fa-times'
+    },
     },
     methods: {
       closeWindow() {
-        // Emit an event or call a method to navigate back to the homepage
         this.$emit('close');
       },
     },
@@ -28,7 +34,7 @@
   top: 0;
   left: 0;
   width: 100%;
-  background-color: white; /* White background */
+  background-color: white;
   color: black;
   padding: 0px 20px;
   display: flex;

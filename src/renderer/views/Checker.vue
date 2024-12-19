@@ -194,7 +194,7 @@ export default {
     justify-content: space-between;
 }
 
-.item-list label{
+.item-list {
     padding: 5px;
     border-bottom: 1px solid #d3d3d3;
 }

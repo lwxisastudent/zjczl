@@ -1,9 +1,14 @@
 const { Menu } = require('electron');
+const account = require('./account');
 
 module.exports = (mainWindow) => {
     const isDevelopment = process.env.NODE_ENV === 'development';
 
     const menuTemplate = [{
+            label: account.getLoginInfo().userName ? `用户: ${account.getLoginInfo().userName}` : '登录',
+            click: () => mainWindow.webContents.send('navigate', 'login')
+        },
+        {
             label: '设置',
             click: () => mainWindow.webContents.send('navigate', 'config'),
             accelerator: 'CmdOrCtrl+I'

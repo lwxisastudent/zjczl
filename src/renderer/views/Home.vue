@@ -48,6 +48,7 @@
         <button @click="saveConfig">保存配置</button>
         <button :disabled="!currentFolder.absolutePath || !currentFolder.outputDir || !currentFolder.dataXlsxDir || !currentFolder.table" @click="runScript('organizer')">整理照片</button>
         <button :disabled="!currentFolder.absolutePath || !currentFolder.outputDir || !currentFolder.dataXlsxDir || !currentFolder.table" @click="runScript('formFiller')">导出表格</button>
+        <button :disabled="!login || !currentFolder.tanfangno || !currentFolder.accuno" @click="goToCardPage">器物卡片</button>
       </div>
       <label class="tips">整理照片前请先检查分类，然后将表格用Excel手动排序表格，先升序排列C列，然后升序排列B列，然后升序排列A列，保证顺序统一</label>
     </div>
@@ -67,7 +68,8 @@ export default {
     return {
       hideExported: false, 
       folderList: [],
-      currentFolder: {}
+      currentFolder: {},
+      login: false
     };
   },
   methods: {
@@ -114,6 +116,14 @@ export default {
       }
 
       this.hideExported = store.getHideExported() || true;
+
+      try{
+        const info = await ipcRenderer.invoke("get-login-info");
+        this.login = Boolean(info.userName);
+        
+      }catch (error) {
+        console.error('获取登录信息失败:', error);
+      }
     },
     updateHideExported(){
       const store = useGlobalStore();
@@ -336,6 +346,17 @@ export default {
       } catch (error) {
         console.error(`运行脚本失败: ${script}`, error);
       }
+    },
+    goToCardPage() {
+      if (this.login && this.currentFolder.tanfangno && this.currentFolder.accuno) {
+        this.$router.push({
+          path: '/cardList',
+          query: {
+            tanfangno: this.currentFolder.tanfangno,
+            accuno: this.currentFolder.accuno
+          }
+        });
+      }
     }
   },
   mounted() {
@@ -387,6 +408,10 @@ export default {
 
 .buttons {
   margin-top: 10px;
+}
+
+.buttons button {
+  margin: 0 2px;
 }
 
 .configed::after{

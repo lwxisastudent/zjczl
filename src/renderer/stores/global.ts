@@ -3,7 +3,14 @@ import { defineStore } from 'pinia';
 export const useGlobalStore = defineStore('global', {
   state: () => ({
     currentIndex: null,
-    hideExported: true
+    hideExported: true,
+    cardListData: {
+      searchParams: {
+        tanfangno: '',
+        accuno: ''
+      },
+      list: []
+    }
   }),
   actions: {
     setCurrentIndex(index) {
@@ -17,6 +24,12 @@ export const useGlobalStore = defineStore('global', {
     },
     getHideExported(){
       return this.hideExported;
+    },
+    setCardListData(data) {
+      this.cardListData = data;
+    },
+    getCardListData() {
+      return this.cardListData;
     }
   },
 });

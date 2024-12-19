@@ -28,6 +28,8 @@ export default {
 <style>
 .content {
   padding: 10px 30px;
+    display: flex;
+    flex-direction: column;
 }
 .subpage .content {
   margin-top: 95px;

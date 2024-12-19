@@ -103,10 +103,9 @@ def main():
                         unique_third_name = third_level_names[(row[0], row[1])][third_base]
                     third_dir = os.path.join(second_dir, unique_third_name)
                     target_dir = os.path.join(third_dir, sub_path) if sub_path else third_dir
-                  
+                    target_paths.append((third_dir, bool(sub_path)))
+                    
                 os.makedirs(target_dir, exist_ok=True)
-                target_paths.append((third_dir, bool(sub_path)))
-                
                 photo_indices = str(row[3]).split(',') if pd.notna(row[3]) else []
                 for index in photo_indices:
                     index = index.strip()

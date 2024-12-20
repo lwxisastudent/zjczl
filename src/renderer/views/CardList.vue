@@ -42,7 +42,7 @@
   </div>
   <div v-if="totalImports === list.length" style="margin-bottom: 20px;">
     <div>
-          批量填写其他部位：{{ currentOtherImportIndex }} / {{ totalImports }}
+          批量填写：{{ currentOtherImportIndex }} / {{ totalImports }}
           <button @click="continueOtherBatchImport" style="margin: 0 5px;" :disabled="!isOtherPaused">继续</button>
           <button @click="stopOtherBatchImport" :disabled="isOtherPaused">暂停</button>
         </div>
@@ -285,13 +285,13 @@
   async processNextImport() {
     if (this.isPaused) return;
 
-    const keys = Object.keys(this.otherParts);
-    if (this.currentImportIndex >= keys.length) {
+    if (this.currentImportIndex >= this.totalImports) {
       alert("批量导入完成");
       this.search();
       return;
     }
 
+    const keys = Object.keys(this.otherParts);
     const key = keys[this.currentImportIndex];
     const part = this.otherParts[key];
 
@@ -350,62 +350,46 @@
   },
     async processNextOtherImport() {
       if (this.isOtherPaused) return;
-      if (this.currentOtherImportIndex >= this.otherParts.length) {
+      if (this.currentOtherImportIndex >= this.totalImports) {
         alert("批量填写其他部位完成");
         return;
       }
       const item = this.list[this.currentOtherImportIndex];
     const keys = Object.keys(this.otherParts);
-    const key = keys[this.currentImportIndex];
+    const key = keys[this.currentOtherImportIndex];
     const part = this.otherParts[key];
 
+    const postData1 = {
+              ...item,
+                token: this.loginInfo.token,
+                projectId: this.loginInfo.projectId,
+                projectName: this.loginInfo.projectName,
+                proUserType: 3
+            };
+
+            delete postData1.ctime2;
+  
+          const response1 = await axios.post(
+            "http://www.kggis.com/kgfj/qwcard/findByInterFinishing.htm",
+            postData1,
+            { headers: { "Content-Type": "application/json" } }
+          );
+
       const postData = {
-      id: "",
-      xiantuID: "",
-      zhaopianID: "",
-      isaudit: "",
-      ctqwglID: "",
+        ...response1.data && response1.data.length > 0 ? response1.data[0] : {},
       danweino: item.danweino,
       accuno: item.accuno,
       utensilsno: item.utensilsno,
       texture: item.texture,
       name: item.tanfangno,
-      buwei: "",
       tanfangno: item.tanfangno,
-      userName: this.loginInfo.userName,
+      userName: response1.data && response1.data.length > 0 ? response1.data[0].userName : this.loginInfo.userName,
       ctime: item.ctime2,
-      repairuserName: "",
-      chutuAddress: "",
-      caliber: "",
-      abdominalDiameter: "",
-      bottomDiameter: "",
-      high: "",
-      wallThickness: "",
       otherParts: part.op,
-      weight: "",
-      capacity: "",
-      material: "",
-      forming: "",
-      dressing: "",
-      decoration: "",
-      heat: "",
-      heatOrDecoration: "",
-      useTrace: "",
-      repairTrace: "",
-      switchTrace: "",
-      morphology: "",
-      typeDescription: "",
-      typeDecoration: "",
-      typeOrnamentation: "",
-      testingOne: "",
-      testingTwo: "",
       remark: item.remark,
-      specimen: "",
-      depositAddress: "",
-      isauditcontent: "",
       token: this.loginInfo.token,
       projectId: this.loginInfo.projectId,
-      userId: this.loginInfo.userId,
+      userId:  response1.data && response1.data.length > 0 ? response1.data[0].userId : this.loginInfo.userId,
       projectName: this.loginInfo.projectName,
       proUserType: 0
     };

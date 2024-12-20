@@ -244,8 +244,7 @@
       fillOtherParts() {
         const otherPart = JSON.parse(this.$route.query.otherPart);
         if (otherPart) {
-          const { type, part, width, height, thickness } = otherPart;
-          this.card.otherParts = `${type}${part}残片，残宽${width}cm，残高${height}cm，厚度${thickness}cm`;
+          this.card.otherParts = otherPart.op;
         } else {
           this.card.otherParts = `残片，残宽cm，残高cm，厚度cm`;
           alert("未传入表格信息或表格中不存在当前标本");
@@ -274,7 +273,6 @@
           );
   
           const data = response.data;
-          alert(JSON.stringify(data));
           if (data.code === 0) {
             alert("保存成功");
             this.fetchCard();

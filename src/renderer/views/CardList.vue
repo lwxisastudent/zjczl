@@ -33,12 +33,19 @@
   </div>
 
   <!-- 批量导入功能 -->
-  <div v-if="totalImports > 0" style="margin-bottom: 20px;">
+  <div v-if="totalImports > 0">
     <div style="margin-top: 10px;">
       批量导入：{{ currentImportIndex }} / {{ totalImports }}
       <button @click="continueBatchImport" style="margin: 0 5px;" :disabled="!isPaused">继续</button>
       <button @click="stopBatchImport" :disabled="isPaused">暂停</button>
     </div>
+  </div>
+  <div v-if="totalImports === list.length" style="margin-bottom: 20px;">
+    <div>
+          批量填写其他部位：{{ currentOtherImportIndex }} / {{ totalImports }}
+          <button @click="continueOtherBatchImport" style="margin: 0 5px;" :disabled="!isOtherPaused">继续</button>
+          <button @click="stopOtherBatchImport" :disabled="isOtherPaused">暂停</button>
+        </div>
   </div>
 
   <!-- 表格内容 -->
@@ -92,11 +99,13 @@
         isLoading: false,
     isPaused: true,
     currentImportIndex: 0,
-    totalImports: 0
+    totalImports: 0,
+      isOtherPaused: true,
+      currentOtherImportIndex: 0,
       };
     },
     async created() {
-      const loginInfo = await this.getLoginInfo();
+      const loginInfo = await this.getloginInfo();
       if (!loginInfo) {
         this.$router.push("/login");
         return;
@@ -151,14 +160,21 @@
           const key = String(row[4] || '');
 
           if (key) {
+            const type = String(row[0] || '');
+            const part = String(row[1] || '');
+            const width = String(row[10] || '');
+            const height = String(row[11] || '');
+            const thickness = String(row[12] || '');
+
             otherParts[key] = { 
-              type: String(row[0] || ''),
-              part: String(row[1] || ''),
-              width: String(row[10] || ''),
-              height: String(row[11] || ''),
-              thickness: String(row[12] || ''),
-              remark: `室内整理标本。${row[0] || ''}${row[1] || ''}。${this.formatThirdColumn(row[2])}`
-           };
+              type,
+              part,
+              width,
+              height,
+              thickness,
+              remark: `室内整理标本：${type} ${part}，${this.formatThirdColumn(row[2])}`,
+              op: `${type}${part}残片，残宽${width}cm，残高${height}cm，厚度${thickness}cm`
+            };
           }
         });
 
@@ -177,7 +193,7 @@
       .replace(/。$/, '')
       .concat(text.endsWith('）') || text.endsWith('。') ? '' : '。');
   },
-      async getLoginInfo() {
+      async getloginInfo() {
         try {
           const response = await ipcRenderer.invoke("get-login-info");
           return response;
@@ -315,12 +331,12 @@
       } else {
         console.error(`记录 ${key} 添加失败:`, response.data.message);
         this.stopBatchImport();
-        alert(`记录 ${key} 添加失败`);
+        alert(`编号${key}添加失败，请检查是否已存在`);
       }
     } catch (error) {
       console.error(`记录 ${key} 添加失败:`, error);
       this.stopBatchImport();
-      alert(`网络错误，记录 ${key} 添加失败`);
+      alert(`网络错误，编号${key}添加失败`);
     }
   },
 
@@ -329,10 +345,99 @@
   },
 
   continueBatchImport() {
-    if (!this.isPaused) return;
     this.isPaused = false;
     this.processNextImport();
   },
+    async processNextOtherImport() {
+      if (this.isOtherPaused) return;
+      if (this.currentOtherImportIndex >= this.otherParts.length) {
+        alert("批量填写其他部位完成");
+        return;
+      }
+      const item = this.list[this.currentOtherImportIndex];
+    const keys = Object.keys(this.otherParts);
+    const key = keys[this.currentImportIndex];
+    const part = this.otherParts[key];
+
+      const postData = {
+      id: "",
+      xiantuID: "",
+      zhaopianID: "",
+      isaudit: "",
+      ctqwglID: "",
+      danweino: item.danweino,
+      accuno: item.accuno,
+      utensilsno: item.utensilsno,
+      texture: item.texture,
+      name: item.tanfangno,
+      buwei: "",
+      tanfangno: item.tanfangno,
+      userName: this.loginInfo.userName,
+      ctime: item.ctime2,
+      repairuserName: "",
+      chutuAddress: "",
+      caliber: "",
+      abdominalDiameter: "",
+      bottomDiameter: "",
+      high: "",
+      wallThickness: "",
+      otherParts: part.op,
+      weight: "",
+      capacity: "",
+      material: "",
+      forming: "",
+      dressing: "",
+      decoration: "",
+      heat: "",
+      heatOrDecoration: "",
+      useTrace: "",
+      repairTrace: "",
+      switchTrace: "",
+      morphology: "",
+      typeDescription: "",
+      typeDecoration: "",
+      typeOrnamentation: "",
+      testingOne: "",
+      testingTwo: "",
+      remark: item.remark,
+      specimen: "",
+      depositAddress: "",
+      isauditcontent: "",
+      token: this.loginInfo.token,
+      projectId: this.loginInfo.projectId,
+      userId: this.loginInfo.userId,
+      projectName: this.loginInfo.projectName,
+      proUserType: 0
+    };
+
+      try {
+       const response = await axios.post("https://www.kggis.com/kgfj/qwcard/saveOrUpdate.htm", postData,
+        { headers: { "Content-Type": "application/json" } }
+      );
+
+      if (response.data.code === 0) {
+        console.log(`记录 ${key} 添加成功`);
+        this.currentOtherImportIndex++;
+        this.processNextOtherImport();
+
+      } else {
+        console.error(`记录 ${key} 添加失败:`, response.data.message);
+        this.stopOtherBatchImport();
+        alert(`编号${key}填写失败，请检查是否已填过器物卡片`);
+      }
+      } catch (error) {
+        console.error("导入失败:", error);
+        this.stopOtherBatchImport();
+        alert(`网络错误，编号${key}填写失败`);
+      }
+    },
+    continueOtherBatchImport() {
+      this.isOtherPaused = false;
+      this.processNextOtherImport();
+    },
+    stopOtherBatchImport() {
+      this.isOtherPaused = true;
+    },
     async deleteItem(item) {
     if (!confirm(`确认删除编号为 ${item.utensilsno} 的记录吗？`)) {
       return;

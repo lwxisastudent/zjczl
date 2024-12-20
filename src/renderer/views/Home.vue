@@ -12,7 +12,7 @@
       />
       </div>
       <ul class="folder-list">
-        <li v-for="(item, index) in folderList" v-show="!hideExported || !item.hasExport && (!Boolean(searchQuery) || item.name.includes(searchQuery))" :key="index" @click="selectData(item)" :class="{'focused': currentFolder.absolutePath === item.absolutePath}">
+        <li v-for="(item, index) in folderList" v-show="(!hideExported || !item.hasExport) && (!Boolean(searchQuery) || item.name.includes(searchQuery))" :key="index" @click="selectData(item)" :class="{'focused': currentFolder.absolutePath === item.absolutePath}">
           <span style="width: 200px;">{{ item.name }}</span>
           <span style="width: 70px; margin-right: 5px; white-space: nowrap;" :class="item.hasConfig ? 'configed' : 'none-configed'"></span>
           <span style="width: 70px; white-space: nowrap;" :class="item.hasExport ? 'exported' : 'unexported'"></span>

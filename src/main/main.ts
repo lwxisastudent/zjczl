@@ -80,7 +80,7 @@ ipcMain.on('select-file', (event, { defaultPath = null, filters = [] }) => {
 ipcMain.handle('get-config', async () => config.readConfig());
 ipcMain.handle('save-config', async (_, data) => config.saveConfig(data));
 ipcMain.handle('get-default-config', async () => config.getDefaultConfig());
-ipcMain.handle('apply-replacements', async (_, str) => config.applyReplacements(str));
+ipcMain.handle('apply-replacements', async (_, t, str) => config.applyReplacements(t, str));
 ipcMain.handle('run-script', async (_, { script, args }) => {
   const pythonScriptPath = process.env.NODE_ENV === 'development'
     ? path.join(__dirname, '..', '..', 'src', 'python', script)

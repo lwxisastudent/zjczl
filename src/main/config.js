@@ -9,6 +9,10 @@ const defaultConfig = {
     replacementRules: [
         ['间断瓦舌', '间断布纹瓦舌'],
         ['抹断绳纹', '抹断直绳纹'],
+        ['瓦头,凸面凹棱纹+连续直绳纹', '瓦头,凸面连续直绳纹+凹棱纹'],
+        ['瓦头,凸面凹棱纹+不连续直绳纹', '瓦头,凸面不连续直绳纹+凹棱纹'],
+        ['瓦头,凸面凹棱纹+斜绳纹', '瓦头,凸面斜绳纹+凹棱纹'],
+        ['瓦头,凸面凹棱纹+交叉绳纹', '瓦头,凸面交叉绳纹+凹棱纹'],
         ['不连续直绳纹+素面', '素面+不连续直绳纹'], // 筒瓦瓦尾
         ['连续直绳纹+素面', '素面+连续直绳纹'], // 筒瓦瓦尾
         ['瓦尾,凸面斜绳纹+素面', '瓦尾,凸面特殊'], // 筒瓦瓦尾
@@ -36,7 +40,7 @@ module.exports = {
     getDefaultConfig: () => {
         return defaultConfig;
     },
-    applyReplacements: (str) => {
+    applyReplacements: (t, str) => {
         const config = module.exports.readConfig();
         if (!config.replacementRules || !Array.isArray(config.replacementRules)) {
             return str;
@@ -49,7 +53,7 @@ module.exports = {
             return result;
         }, str.replace(/\/#[^/]*/, '').replace("＋", "+"));
 
-        if (s.includes('瓦头')) {
+        if (t === '筒瓦' && s.includes('瓦头')) {
             if (s.includes('素面') && !s.includes('外素面')) {
                 return "瓦头,不明，" + s.substring(s.indexOf('凹面'));
             }

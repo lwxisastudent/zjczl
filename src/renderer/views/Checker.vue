@@ -78,12 +78,12 @@ export default {
                 .filter(row => row[0] === '板瓦' || row[0] === '筒瓦')
                 .map(async row => {
                     if (row[0] === '板瓦') {
-                        const item = await ipcRenderer.invoke('apply-replacements', row[1] + ',' + row[2].replace(",", "，"));
+                        const item = await ipcRenderer.invoke('apply-replacements', row[0], row[1] + ',' + row[2].replace(",", "，"));
                         if (item && !banwa.includes(item)) {
                             banwa.push(item);
                         }
                     } else if (row[0] === '筒瓦') {
-                        const item = await ipcRenderer.invoke('apply-replacements', row[1] + ',' + row[2].replace(",", "，"));
+                        const item = await ipcRenderer.invoke('apply-replacements', row[0], row[1] + ',' + row[2].replace(",", "，"));
                         if (item && !tongwa.includes(item)) {
                             tongwa.push(item);
                         }
@@ -99,7 +99,6 @@ export default {
         validateItems(items, type) {
             const structureRows = type === '板瓦' ? this.banwaStructureRows : this.tongwaStructureRows;
             const structureCols = type === '板瓦' ? this.banwaStructureCols : this.tongwaStructureCols;
-            console.log(structureCols);
 
             items.forEach(item => {
                 if(!item.includes('，凹面')){

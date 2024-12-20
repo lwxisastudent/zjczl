@@ -35,14 +35,28 @@
   <!-- 批量导入功能 -->
   <div v-if="totalImports > 0">
     <div style="margin-top: 10px;">
-      批量导入：{{ currentImportIndex }} / {{ totalImports }}
+      批量导入：<input 
+        type="number" 
+        :disabled="!isPaused"
+        v-model.number="currentImportIndex" 
+        style="width: 60px;" 
+        :max="totalImports - 1" 
+        :min="0"
+      />  / {{ totalImports }}
       <button @click="continueBatchImport" style="margin: 0 5px;" :disabled="!isPaused">继续</button>
       <button @click="stopBatchImport" :disabled="isPaused">暂停</button>
     </div>
   </div>
   <div v-if="totalImports === list.length" style="margin-bottom: 20px;">
     <div>
-          批量填写：{{ currentOtherImportIndex }} / {{ totalImports }}
+          批量填写：<input 
+        type="number" 
+        :disabled="!isOtherPaused"
+        v-model.number="currentOtherImportIndex" 
+        style="width: 60px;" 
+        :max="totalImports - 1" 
+        :min="0"
+      /> / {{ totalImports }}
           <button @click="continueOtherBatchImport" style="margin: 0 5px;" :disabled="!isOtherPaused">继续</button>
           <button @click="stopOtherBatchImport" :disabled="isOtherPaused">暂停</button>
         </div>
@@ -157,26 +171,53 @@
         const otherParts = {};
 
         jsonData.forEach((row, index) => {
-          const key = String(row[4] || '');
+  const key = String(row[4] || '');
 
-          if (key) {
-            const type = String(row[0] || '');
-            const part = String(row[1] || '');
-            const width = String(row[10] || '');
-            const height = String(row[11] || '');
-            const thickness = String(row[12] || '');
+  if (key) {
+    const type = String(row[0] || '');
+    const part = String(row[1] || '');
+    const width = String(row[10] || '');
+    const height = String(row[11] || '');
+    const thickness = String(row[12] || '');
 
-            otherParts[key] = { 
-              type,
-              part,
-              width,
-              height,
-              thickness,
-              remark: `室内整理标本：${type} ${part}，${this.formatThirdColumn(row[2])}`,
-              op: `${type}${part}残片，残宽${width}cm，残高${height}cm，厚度${thickness}cm`
-            };
-          }
-        });
+    const keyCommaCount = (key.match(/,/g) || []).length;
+    const widthCommaCount = (width.match(/,/g) || []).length;
+    const heightCommaCount = (height.match(/,/g) || []).length;
+    const thicknessCommaCount = (thickness.match(/,/g) || []).length;
+
+    if (keyCommaCount === widthCommaCount && 
+        keyCommaCount === heightCommaCount && 
+        keyCommaCount === thicknessCommaCount) {
+      const keys = key.split(',');
+      const widths = width.split(',');
+      const heights = height.split(',');
+      const thicknesses = thickness.split(',');
+
+      keys.forEach((subKey, i) => {
+        otherParts[subKey.trim()] = {
+          type,
+          part,
+          width: widths[i]?.trim() || '',
+          height: heights[i]?.trim() || '',
+          thickness: thicknesses[i]?.trim() || '',
+          remark: `室内整理标本：${type} ${part}，${this.formatThirdColumn(row[2])}`,
+          op: `${type}${part}残片，残宽${widths[i]?.trim()}cm，残高${heights[i]?.trim()}cm，厚度${thicknesses[i]?.trim()}cm`
+        };
+      });
+    } else {
+      otherParts[key] = {
+        type,
+        part,
+        width,
+        height,
+        thickness,
+        remark: `室内整理标本：${type} ${part}，${this.formatThirdColumn(row[2])}`,
+        op: `${type}${part}残片，残宽${width}cm，残高${height}cm，厚度${thickness}cm`
+      };
+    }
+  }
+});
+
 
         this.otherParts = otherParts;
       this.totalImports = Object.keys(this.otherParts).length;
@@ -330,8 +371,14 @@
 
       } else {
         console.error(`记录 ${key} 添加失败:`, response.data.message);
-        this.stopBatchImport();
-        alert(`编号${key}添加失败，请检查是否已存在`);
+        const skip = confirm(`编号${key}添加失败，是否已经存在？\n是否略过并继续？`);
+        if (skip) {
+          this.currentImportIndex++;
+          this.processNextImport();
+        } else {
+          this.stopBatchImport();
+          this.search();
+        }
       }
     } catch (error) {
       console.error(`记录 ${key} 添加失败:`, error);

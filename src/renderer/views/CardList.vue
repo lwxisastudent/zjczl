@@ -39,7 +39,7 @@
         type="number" 
         :disabled="!isPaused"
         v-model.number="currentImportIndex" 
-        style="width: 60px;" 
+        style="width: 30px;" 
         :max="totalImports - 1" 
         :min="0"
       />  / {{ totalImports }}
@@ -53,7 +53,7 @@
         type="number" 
         :disabled="!isOtherPaused"
         v-model.number="currentOtherImportIndex" 
-        style="width: 60px;" 
+        style="width: 30px;" 
         :max="totalImports - 1" 
         :min="0"
       /> / {{ totalImports }}
@@ -179,24 +179,29 @@
     const width = String(row[10] || '');
     const height = String(row[11] || '');
     const thickness = String(row[12] || '');
+    const weight = String(row[9] || '');
 
     const keyCommaCount = (key.match(/,/g) || []).length;
     const widthCommaCount = (width.match(/,/g) || []).length;
     const heightCommaCount = (height.match(/,/g) || []).length;
     const thicknessCommaCount = (thickness.match(/,/g) || []).length;
+    const weightCommaCount = (weight.match(/,/g) || []).length;
 
     if (keyCommaCount === widthCommaCount && 
         keyCommaCount === heightCommaCount && 
-        keyCommaCount === thicknessCommaCount) {
+        keyCommaCount === thicknessCommaCount &&
+        keyCommaCount === weightCommaCount) {
       const keys = key.split(',');
       const widths = width.split(',');
       const heights = height.split(',');
       const thicknesses = thickness.split(',');
+      const weights = weight.split(',');
 
       keys.forEach((subKey, i) => {
         otherParts[subKey.trim()] = {
           type,
           part,
+          weight: weights[i]?.trim() || '',
           width: widths[i]?.trim() || '',
           height: heights[i]?.trim() || '',
           thickness: thicknesses[i]?.trim() || '',
@@ -208,6 +213,7 @@
       otherParts[key] = {
         type,
         part,
+        weight: row[9] || '',
         width,
         height,
         thickness,
@@ -437,7 +443,6 @@
       bottomDiameter: "",
       high: "",
       wallThickness: "",
-      weight: "",
       capacity: "",
       forming: "",
       dressing: "",
@@ -465,6 +470,7 @@
       tanfangno: item.tanfangno,
       ctime: item.ctime2,
       otherParts: part.op,
+      weight: part.weight,
       remark: item.remark,
       material: "泥质陶。",
       token: this.loginInfo.token,

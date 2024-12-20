@@ -245,6 +245,7 @@
         const otherPart = JSON.parse(this.$route.query.otherPart);
         if (otherPart) {
           this.card.otherParts = otherPart.op;
+          this.card.weight = otherPart.weight;
         } else {
           this.card.otherParts = `残片，残宽cm，残高cm，厚度cm`;
           alert("未传入表格信息或表格中不存在当前标本");

@@ -150,7 +150,7 @@
       }
 
       this.item = item;
-      await this.fetchCard();
+      this.fetchCard();
     },
     methods: {
       async getLoginInfo() {
@@ -170,7 +170,6 @@
               ...item,
                 token: loginInfo.token,
                 projectId: loginInfo.projectId,
-                userId: loginInfo.userId,
                 projectName: loginInfo.projectName,
                 proUserType: 3
             };
@@ -196,7 +195,7 @@
                 isaudit: "",
                 ctqwglID: "",
                 danweino: item.danweino,
-                accuno: "②",
+                accuno: item.accuno,
                 utensilsno: item.utensilsno,
                 texture: item.texture,
                 name: item.name,
@@ -229,7 +228,7 @@
                 typeOrnamentation: "",
                 testingOne: "",
                 testingTwo: "",
-                remark: "",
+                remark: item.remark,
                 specimen: "",
                 depositAddress: "",
                 isauditcontent: ""
@@ -261,9 +260,11 @@
             ...this.card,
             ctime: this.formatDate(Date.now()),
             token: this.loginInfo.token,
+            userId: this.card.id ? this.card.userId : this.loginInfo.userId,
+            userName: this.card.id ? this.card.userName : this.loginInfo.userName,
             projectId: this.loginInfo.projectId,
             projectName: this.loginInfo.projectName,
-            proUserType: this.loginInfo.proUserType
+            proUserType: 0
           };
   
           const response = await axios.post(
@@ -273,6 +274,7 @@
           );
   
           const data = response.data;
+          alert(JSON.stringify(data));
           if (data.code === 0) {
             alert("保存成功");
             this.fetchCard();

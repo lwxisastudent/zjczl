@@ -189,7 +189,7 @@ ipcMain.handle('open-card-window', async (event, query) => {
     else {
       cardWindow.loadURL(`file://${path.join(app.getAppPath(), 'renderer', 'index.html')}#/card?${queryString}`);
     }
-
+    
     const menuTemplate = [
       {
           label: '刷新',
@@ -197,6 +197,16 @@ ipcMain.handle('open-card-window', async (event, query) => {
           accelerator: 'CmdOrCtrl+R'
       },
     ];
+
+    const isDevelopment = process.env.NODE_ENV === 'development';
+    if (isDevelopment) {
+        menuTemplate.push({
+          label: '开发者模式',
+          click: () => cardWindow.webContents.openDevTools({ mode: 'detach' }),
+          accelerator: ""
+        });
+    }
+
     const menu = Menu.buildFromTemplate(menuTemplate);
     cardWindow.setMenu(menu);
     cardWindow.setTitle('器物卡片');

@@ -1,7 +1,4 @@
 <template>
-    <div class="subpage">
-        <Header title="器物卡片" @close="goBack" icon="fa-solid fa-rotate-left" />
-        
         <div class="content">
             <div v-if="card" class="card-detail">
                 <div class="form-row">
@@ -119,23 +116,18 @@
                 </div>
         
                 <!-- 保存按钮 -->
-                <button @click="saveCard">保存</button>
+                <button @click="saveCard" style="width: 100%;">保存</button>
             </div>
             <div v-else>加载中...</div>
         </div>
-    </div>
   </template>
   
   <script>
   import axios from "axios";
-  import Header from '../components/Header.vue';
   import '@fortawesome/fontawesome-free/css/all.min.css';
   const { ipcRenderer } = window.require('electron');
   
   export default {
-  components: {
-    Header,
-  },
     data() {
       return {
         item: null,
@@ -268,8 +260,6 @@
           const postData = {
             ...this.card,
             ctime: this.formatDate(Date.now()),
-            userId: this.loginInfo.userId,
-            userName: this.loginInfo.userName,
             token: this.loginInfo.token,
             projectId: this.loginInfo.projectId,
             projectName: this.loginInfo.projectName,

@@ -8,7 +8,7 @@ const account = require('./account');
 
 let mainWindow;
 
-app.whenReady().then(() => {
+app.whenReady().then(async () => {
   mainWindow = new BrowserWindow({
     width: 400,
     height: 800,
@@ -29,6 +29,7 @@ app.whenReady().then(() => {
   else {
     mainWindow.loadFile(path.join(app.getAppPath(), 'renderer', 'index.html'));
   }
+  await account.loadLoginInfo();
   Menu.setApplicationMenu(menu(mainWindow));
 });
 
@@ -156,8 +157,8 @@ ipcMain.handle('open-folder', (event, folderPath) => {
   });
 });
 
-ipcMain.handle('login', async (_, { userId, password }) => {
-  const r = await account.login(userId, password);
+ipcMain.handle('login', async (_, { userId, password, autoLogin }) => {
+  const r = await account.login(userId, password, autoLogin);
   Menu.setApplicationMenu(menu(mainWindow));
   return r;
 });
@@ -165,4 +166,44 @@ ipcMain.handle('get-login-info', () => account.getLoginInfo());
 ipcMain.handle('get-projects', () => account.getProjects());
 ipcMain.handle('select-project', (_, projectId) => {
   return account.selectProject(projectId);
+});
+
+
+ipcMain.handle('open-card-window', async (event, query) => {
+  try {
+    const cardWindow = new BrowserWindow({
+      width: 800,
+      height: 600,
+      icon: path.join(__dirname,'../../resources/icon.png'),
+      webPreferences: {
+        nodeIntegration: true,
+        contextIsolation: false
+      },
+    });
+
+    const queryString = new URLSearchParams(query).toString();
+    if (process.env.NODE_ENV === 'development') {
+      const rendererPort = process.argv[2];
+      cardWindow.loadURL(`http://localhost:${rendererPort}/#/card?${queryString}`);
+    }
+    else {
+      cardWindow.loadURL(`file://${path.join(app.getAppPath(), 'renderer', 'index.html')}#/card?${queryString}`);
+    }
+
+    const menuTemplate = [
+      {
+          label: '刷新',
+          click: () => mainWindow.webContents.reload(),
+          accelerator: 'CmdOrCtrl+R'
+      },
+    ];
+    const menu = Menu.buildFromTemplate(menuTemplate);
+    cardWindow.setMenu(menu);
+    cardWindow.setTitle('器物卡片');
+
+    return { success: true };
+  } catch (error) {
+    console.error('打开新窗口失败:', error);
+    return { success: false };
+  }
 });

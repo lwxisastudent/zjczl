@@ -3,22 +3,29 @@
     <Header title="器物管理" @close="goHome" />
 
 <div class="content">
-  <label style="width: 100%">探方号          单位号          堆积号</label>
+  <div class="form-row">
+    <label style="width: 75px;">探方号</label>
+    <label style="width: 75px;">单位号</label>
+    <label style="width: 75px;">堆积号</label>
+  </div>
   <div class="form-row" style="margin-bottom: 20px;">
     <input
       v-model="searchParams.tanfangno"
       placeholder="探方号"
       class="input"
+      style="width: 75px;"
     />
     <input
       v-model="searchParams.danweino"
       placeholder="单位号"
       class="input"
+      style="width: 75px;"
     />
     <input
       v-model="searchParams.accuno"
       placeholder="堆积号"
       class="input"
+      style="width: 75px;"
     />
     <button @click="search" :disabled="isLoading" style="white-space: nowrap;">
       {{ isLoading ? "搜索中..." : "搜索" }}
@@ -102,10 +109,12 @@
         this.searchParams.tanfangno = tanfangno;
         this.searchParams.danweino = tanfangno;
         this.searchParams.accuno = accuno;
-        this.dataXlsxDir = decodeURIComponent(dataXlsxDir);
-        this.tableName = decodeURIComponent(tableName);
-        await this.fetchOtherParts();
-        await this.search();
+        if(dataXlsxDir && tableName){
+          this.dataXlsxDir = decodeURIComponent(dataXlsxDir);
+          this.tableName = decodeURIComponent(tableName);
+          await this.fetchOtherParts();
+        }
+        this.search();
       } else {
         const store = useGlobalStore();
         const sd = store.getCardListData();
@@ -114,7 +123,7 @@
             this.list = sd.list;
             this.dataXlsxDir = sd.dataXlsxDir;
             this.tableName = sd.tableName;
-            await this.fetchOtherParts();
+            this.fetchOtherParts();
         }
       }
     },
@@ -239,13 +248,15 @@
         }
       },
       async goToCard(item) {
-        this.$router.push({
-          path: '/card',
-          query: {
-              item: JSON.stringify(item),
-              otherPart: JSON.stringify(this.otherParts[String(item.utensilsno)] || null)
-          }
-        });
+        const query = {
+          item: JSON.stringify(item),
+          otherPart: JSON.stringify(this.otherParts ? this.otherParts[String(item.utensilsno)] || null : null),
+        };
+
+        const response = await ipcRenderer.invoke('open-card-window', query);
+        if (!response.success) {
+          console.error('打开新窗口失败:', response.message);
+        }
       },
       formatDate(timestamp) {
         const date = new Date(timestamp);

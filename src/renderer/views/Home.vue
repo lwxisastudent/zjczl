@@ -353,7 +353,16 @@ export default {
         const dataXlsxDir = path.join(config.sourceFolder, this.currentFolder.dataXlsxDir);
         const tableName = this.currentFolder.table;
 
-        if (!dataXlsxDir || !tableName) {
+        this.$router.push({
+          path: '/cardList',
+          query: {
+            tanfangno: this.currentFolder.tanfangno,
+            accuno: this.currentFolder.accuno,
+            dataXlsxDir: encodeURIComponent(dataXlsxDir),
+            tableName: encodeURIComponent(tableName)
+          }
+        });
+      } catch (error) {
           this.$router.push({
             path: '/cardList',
             query: {
@@ -361,21 +370,6 @@ export default {
               accuno: this.currentFolder.accuno
             }
           });
-          return;
-        }
-        else{
-          this.$router.push({
-            path: '/cardList',
-            query: {
-              tanfangno: this.currentFolder.tanfangno,
-              accuno: this.currentFolder.accuno,
-              dataXlsxDir: encodeURIComponent(dataXlsxDir),
-              tableName: encodeURIComponent(tableName)
-            }
-          });
-        }
-      } catch (error) {
-        alert('操作失败');
       }
     }
   },
@@ -402,7 +396,7 @@ export default {
   margin: 0;
   margin-bottom: 20px;
   padding: 10px;
-  height: calc(100vh - 320px);
+  height: calc(100vh - 350px);
   background-color: #F8F8F8;
   overflow-y: auto;
   border-radius: 6px;
@@ -413,7 +407,7 @@ export default {
   color: #ccc;
   display: flex;
   justify-content: center;
-  height: calc(100vh - 320px);
+  height: calc(100vh - 350px);
   align-items: center;
 }
 

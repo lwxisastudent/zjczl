@@ -4,10 +4,15 @@
       <div class="form-row">
         <label>
           <input type="checkbox" v-model="hideExported" @change="updateHideExported" /> 隐藏已导出
-        </label>
+        </label>      <input
+        style="margin-left: 30px;"
+        type="text"
+        v-model="searchQuery"
+        placeholder="搜索堆积..."
+      />
       </div>
       <ul class="folder-list">
-        <li v-for="(item, index) in folderList" v-show="!hideExported || !item.hasExport" :key="index" @click="selectData(item)" :class="{'focused': currentFolder.absolutePath === item.absolutePath}">
+        <li v-for="(item, index) in folderList" v-show="!hideExported || !item.hasExport && (!Boolean(searchQuery) || item.name.includes(searchQuery))" :key="index" @click="selectData(item)" :class="{'focused': currentFolder.absolutePath === item.absolutePath}">
           <span style="width: 200px;">{{ item.name }}</span>
           <span style="width: 70px; margin-right: 5px; white-space: nowrap;" :class="item.hasConfig ? 'configed' : 'none-configed'"></span>
           <span style="width: 70px; white-space: nowrap;" :class="item.hasExport ? 'exported' : 'unexported'"></span>
@@ -69,7 +74,8 @@ export default {
       hideExported: false, 
       folderList: [],
       currentFolder: {},
-      login: false
+      login: false,
+      searchQuery: ''
     };
   },
   methods: {

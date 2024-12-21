@@ -47,7 +47,7 @@
       <button @click="stopBatchImport" :disabled="isPaused">暂停</button>
     </div>
   </div>
-  <div v-if="totalImports === list.length" style="margin-bottom: 20px;">
+  <div v-if="totalImports > 0 && list.length > 0" style="margin-bottom: 20px;">
     <div>
           批量填写：<input 
         type="number" 
@@ -407,10 +407,10 @@
         alert("批量填写其他部位完成");
         return;
       }
-      const item = this.list[this.currentOtherImportIndex];
     const keys = Object.keys(this.otherParts);
     const key = keys[this.currentOtherImportIndex];
     const part = this.otherParts[key];
+    const item = this.list.find(item => item.utensilsno === key);
 
     const postData1 = {
               ...item,
@@ -427,6 +427,13 @@
             postData1,
             { headers: { "Content-Type": "application/json" } }
           );
+
+          if (response1.data && response1.data.length > 0) {
+            if (!confirm(`编号${key}已有器物卡片填写，是否覆盖填写“其他部位”、“重量”等部分。\n点击“取消”暂停，您可以手动改到没有冲突的编号继续填写。`)) {
+             this.stopOtherBatchImport();
+             return;
+            }
+          }
 
       const postData = {
       id: "",

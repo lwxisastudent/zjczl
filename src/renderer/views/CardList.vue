@@ -34,7 +34,7 @@
 
   <!-- 批量导入功能 -->
   <div v-if="totalImports > 0">
-    <div style="margin-top: 10px;">
+    <div style="margin-top: 10px; display: flex; width:100%;">
       批量导入：<input 
         type="number" 
         :disabled="!isPaused"
@@ -43,12 +43,12 @@
         :max="totalImports - 1" 
         :min="0"
       />  / {{ totalImports }}
-      <button @click="continueBatchImport" style="margin: 0 5px;" :disabled="!isPaused">继续</button>
-      <button @click="stopBatchImport" :disabled="isPaused">暂停</button>
+      <button class="import-button" @click="continueBatchImport" style="margin: 0 10px;" :disabled="!isPaused">继续</button>
+      <button class="import-button"  @click="stopBatchImport" :disabled="isPaused">暂停</button>
     </div>
   </div>
   <div v-if="totalImports > 0 && list.length > 0" style="margin-bottom: 20px;">
-    <div>
+    <div style=" display: flex; width:100%;">
           批量填写：<input 
         type="number" 
         :disabled="!isOtherPaused"
@@ -57,8 +57,8 @@
         :max="totalImports - 1" 
         :min="0"
       /> / {{ totalImports }}
-          <button @click="continueOtherBatchImport" style="margin: 0 5px;" :disabled="!isOtherPaused">继续</button>
-          <button @click="stopOtherBatchImport" :disabled="isOtherPaused">暂停</button>
+          <button class="import-button"  @click="continueOtherBatchImport" style="margin: 0 10px;" :disabled="!isOtherPaused">继续</button>
+          <button class="import-button"  @click="stopOtherBatchImport" :disabled="isOtherPaused">暂停</button>
         </div>
   </div>
 
@@ -81,7 +81,7 @@
       <label style="width: 60px;">{{ item.texture }}</label>
       <label style="width: 60px;">{{ item.name }}</label>
       <label style="width: 100px;">{{ item.remark }}</label>
-  <button @click.stop="deleteItem(item)">删除</button>
+  <button class="operate-button"click.stop="deleteItem(item)">删除</button>
     </div>
   </div>
   <div v-else>暂无数据</div>
@@ -583,11 +583,14 @@
 .item-list button {
     height: 20px;
     width: 60px;
-    white-space: nowrap;
     line-height: 24px;
     display: flex;
-    justify-content: center;
-    align-items: center;
   }
+
+.import-button,
+.operate-button {
+  height: 24px;
+  line-height: 24px;
+}
 </style>
   

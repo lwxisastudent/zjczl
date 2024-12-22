@@ -1,6 +1,6 @@
 <template>
     <div class="subpage">
-        <Header title="登录" @close="goHome" />
+        <Header :title="title" @close="goHome" />
 
         <div class="content">
             <form @submit.prevent="handleLogin">
@@ -27,7 +27,7 @@
                 <div class="form-row">
                   <label style="align-items: center;
                         display: flex;">
-                    <input type="checkbox" v-model="rememberMe" />
+                    <input style="flex: none;" type="checkbox" v-model="rememberMe" />
                     自动登录
                   </label>
                   <button style="margin-left: auto;" type="submit" :disabled="isLoading">
@@ -62,6 +62,7 @@ export default {
   },
   data() {
     return {
+      title: "登录",
       userId: "",
       password: "",
       isLoading: false,
@@ -70,6 +71,14 @@ export default {
       errorMessage: "",
       rememberMe: false
     };
+  },
+  mounted() {
+    ipcRenderer.invoke("get-login-info").then((loginInfo) => {
+        if(Boolean(loginInfo.userName)){
+          this.title = '切换账号';
+        }
+      });
+
   },
   methods: {
         async goHome() {

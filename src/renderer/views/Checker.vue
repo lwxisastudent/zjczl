@@ -186,6 +186,7 @@ export default {
   color: #ccc;
   display: flex;
   justify-content: center;
+  margin-top: 5px;
 }
 
 .item-list {
@@ -208,6 +209,10 @@ export default {
 
 .conflict {
     color: red;
+}
+
+.buttons {
+    justify-content: center;
 }
 
 .buttons button {

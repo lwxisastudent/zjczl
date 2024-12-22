@@ -86,6 +86,18 @@ async function login(userId, password, autoLogin = false) {
     }
 }
 
+function logout() {
+    loginInfo = {
+        projectId: '',
+        token: '',
+        userId: '',
+        userName: '',
+        projectName: '',
+        proUserType: 0,
+    };
+    return { success: true, loginInfo };
+}
+
 function getLoginInfo() {
     return loginInfo;
 }
@@ -108,6 +120,7 @@ function selectProject(projectId) {
 
 module.exports = {
     login,
+    logout,
     getLoginInfo,
     getProjects,
     selectProject,

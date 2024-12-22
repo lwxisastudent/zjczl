@@ -2,8 +2,9 @@
   <div>
     <div class="content">
       <div class="form-row">
-        <label>
-          <input type="checkbox" v-model="hideExported" @change="updateHideExported" /> 隐藏已导出
+        <label  style="align-items: center;
+        display: flex;">
+          <input style="flex:none; margin-right:5px;" type="checkbox" v-model="hideExported" @change="updateHideExported" /> 隐藏已导出
         </label>      <input
         style="margin-left: 30px;"
         type="text"
@@ -39,21 +40,21 @@
           <option value="" disabled>请选择表格</option>
           <option v-for="(sheet, index) in currentFolder.sheetNames" :key="index" :value="sheet">{{ sheet }}</option>
         </select>
-        <button :disabled="!currentFolder.dataXlsxDir || !currentFolder.table" @click="checkClassification">检查分类</button> 
+        <button class="operate-button" :disabled="!currentFolder.dataXlsxDir || !currentFolder.table" @click="checkClassification">检查分类</button> 
       </div>
       <div class="form-row">
         <label>输出目录          <span @click="openOutputExplorer" class="folder-icon" v-if="currentFolder.hasExport">
             <i class="fa-regular fa-folder" aria-hidden="true"></i>
           </span></label>
         <input type="text" v-model="currentFolder.outputDir" />
-        <button :disabled="!currentFolder.absolutePath" @click="generateDefaultOutputDirByJPGFilesTime">计算日期</button> 
+        <button class="operate-button" :disabled="!currentFolder.absolutePath" @click="generateDefaultOutputDirByJPGFilesTime">计算日期</button> 
       </div>
 
       <div class="buttons">
         <button @click="saveConfig">保存配置</button>
         <button :disabled="!currentFolder.absolutePath || !currentFolder.outputDir || !currentFolder.dataXlsxDir || !currentFolder.table" @click="runScript('organizer')">整理照片</button>
         <button :disabled="!currentFolder.absolutePath || !currentFolder.outputDir || !currentFolder.dataXlsxDir || !currentFolder.table" @click="runScript('formFiller')">导出表格</button>
-        <button :disabled="!login || !currentFolder.tanfangno || !currentFolder.accuno" @click="goToCardPage">器物卡片</button>
+        <button style="margin-right: 0;" :disabled="!login || !currentFolder.tanfangno || !currentFolder.accuno" @click="goToCardPage">器物卡片</button>
       </div>
       <label class="tips">整理照片前请先检查分类，然后将表格用Excel手动排序表格，先升序排列C列，然后升序排列B列，然后升序排列A列，保证顺序统一</label>
     </div>
@@ -81,6 +82,7 @@ export default {
   methods: {
     async refreshFolders() {
       const store = useGlobalStore();
+      this.hideExported = store.getHideExported();
       
       const config = await ipcRenderer.invoke('get-config');
       if (!config.sourceFolder || !config.exportFolder) {
@@ -120,8 +122,6 @@ export default {
       } catch (error) {
         console.error('获取配置失败:', error);
       }
-
-      this.hideExported = store.getHideExported() || true;
 
       try{
         const info = await ipcRenderer.invoke("get-login-info");
@@ -380,12 +380,19 @@ export default {
     }
   },
   mounted() {
-    ipcRenderer.on('refresh-folders', this.refreshFolders);
     this.refreshFolders();
+
+    ipcRenderer.invoke("get-login-info").then((loginInfo) => {
+      this.login = Boolean(loginInfo.userName);
+    });
+
+    ipcRenderer.on('login-success', (event, loginInfo) => {
+      this.login = Boolean(loginInfo.userName);
+    });
   },
   beforeUnmount() {
-    ipcRenderer.removeListener('refresh-folders', this.refreshFolders);
-  },
+    ipcRenderer.removeAllListeners('login-success');
+  }
 };
 </script>
 
@@ -395,25 +402,24 @@ export default {
   display: flex;
   justify-content: center;
   font-size: 10px;
-  margin-top: 5px;
+  margin-top: 10px;
 }
 
 .folder-list {
   margin: 0;
   margin-bottom: 20px;
   padding: 10px;
-  height: calc(100vh - 350px);
-  background-color: #F8F8F8;
+  height: calc(100vh - 400px);
+  background-color: var(--table-bg);
   overflow-y: auto;
-  border-radius: 6px;
-  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+  box-shadow: 4px 4px 0 black;
 }
 
 .none {
   color: #ccc;
   display: flex;
   justify-content: center;
-  height: calc(100vh - 350px);
+  height: calc(100vh - 400px);
   align-items: center;
 }
 
@@ -428,10 +434,6 @@ export default {
 
 .buttons {
   margin-top: 10px;
-}
-
-.buttons button {
-  margin: 0 2px;
 }
 
 .configed::after{
@@ -468,15 +470,16 @@ export default {
   flex: 1;
   min-width: 0;
 }
+.form-row button,
+.buttons button {
+  height: 34px;
+  width: calc( (340px - 30px) / 4);
+  line-height: 34px;
+}
 
 .form-row button {
-  margin-left: 10px;
   height: 24px;
-  width: 80px;
-  white-space: nowrap;
+  margin-left: 10px;
   line-height: 24px;
-  display: flex;
-  justify-content: center;
-  align-items: center;
 }
 </style>

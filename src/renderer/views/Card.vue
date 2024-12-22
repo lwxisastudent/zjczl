@@ -116,7 +116,7 @@
                 </div>
         
                 <!-- 保存按钮 -->
-                <button @click="saveCard" style="width: 100%;">保存</button>
+                <button @click="saveCard" style="width: 100%; margin-top: 20px;">保存</button>
             </div>
             <div v-else>加载中...</div>
         </div>
@@ -297,6 +297,9 @@
   </script>
   
   <style scoped>
+    .card-detail {
+      padding-bottom: 30px;
+    }
   .form-row-title {
     font-weight: 1000;
     width: 100%;
@@ -317,8 +320,6 @@
   .form-row input{
     min-width: 0;
     height: 20px;
-    border-radius: 4px;
-    border: 1px solid #ccc;
     flex: 1;
   }
   
@@ -344,11 +345,7 @@
   margin-left: 10px;
   height: 20px;
   width: 80px;
-  white-space: nowrap;
   line-height: 24px;
-  display: flex;
-  justify-content: center;
-  align-items: center;
 }
   </style>
   

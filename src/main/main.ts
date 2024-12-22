@@ -1,36 +1,44 @@
-const { app, BrowserWindow, ipcMain, Menu, dialog } = require('electron');
+const { app, BrowserWindow, ipcMain, dialog } = require('electron');
 const path = require('path');
 const fs = require('fs');
 const { exec } = require('child_process');
+const { v4: uuidv4 } = require('uuid');
 const config = require('./config');
-const menu = require('./menu');
 const account = require('./account');
 
 let mainWindow;
+const windows = new Map();
 
 app.whenReady().then(async () => {
   mainWindow = new BrowserWindow({
-    width: 400,
+    width: 570,
     height: 800,
     minHeight: 500,
-    minWidth: 400,
-    maxWidth: process.env.NODE_ENV === 'development' ? 10000 : 400,
+    minWidth: 570,
+    maxWidth: 570,
+    frame: false,
     icon: path.join(__dirname,'../../resources/icon.png'),
     webPreferences: {
       nodeIntegration: true,
-      contextIsolation: false
+      contextIsolation: false,
+      additionalArguments: ['windowId=main'],
     },
   });
 
   if (process.env.NODE_ENV === 'development') {
     const rendererPort = process.argv[2];
     mainWindow.loadURL(`http://localhost:${rendererPort}`);
+    mainWindow.webContents.openDevTools({ mode: 'detach' });
   }
   else {
     mainWindow.loadFile(path.join(app.getAppPath(), 'renderer', 'index.html'));
   }
-  await account.loadLoginInfo();
-  Menu.setApplicationMenu(menu(mainWindow));
+
+  mainWindow.webContents.once('did-finish-load', async () => {
+    await account.loadLoginInfo();
+    mainWindow.webContents.send('login-success', account.getLoginInfo());
+  });
+  windows.set('main', mainWindow);
 });
 
 
@@ -159,7 +167,12 @@ ipcMain.handle('open-folder', (event, folderPath) => {
 
 ipcMain.handle('login', async (_, { userId, password, autoLogin }) => {
   const r = await account.login(userId, password, autoLogin);
-  Menu.setApplicationMenu(menu(mainWindow));
+  mainWindow.webContents.send('login-success', r.loginInfo);
+  return r;
+});
+ipcMain.handle('logout', async (_) => {
+  const r = await account.logout();
+  mainWindow.webContents.send('login-success', r.loginInfo);
   return r;
 });
 ipcMain.handle('get-login-info', () => account.getLoginInfo());
@@ -171,13 +184,17 @@ ipcMain.handle('select-project', (_, projectId) => {
 
 ipcMain.handle('open-card-window', async (event, query) => {
   try {
+    const subWindowId = uuidv4();
     const cardWindow = new BrowserWindow({
-      width: 800,
+      width: 720,
       height: 600,
+      maxWidth: 720,
+      frame: false,
       icon: path.join(__dirname,'../../resources/icon.png'),
       webPreferences: {
         nodeIntegration: true,
-        contextIsolation: false
+        contextIsolation: false,
+        additionalArguments: [`windowId=${subWindowId}`]
       },
     });
 
@@ -190,30 +207,65 @@ ipcMain.handle('open-card-window', async (event, query) => {
       cardWindow.loadURL(`file://${path.join(app.getAppPath(), 'renderer', 'index.html')}#/card?${queryString}`);
     }
     
-    const menuTemplate = [
-      {
-          label: '刷新',
-          click: () => mainWindow.webContents.reload(),
-          accelerator: 'CmdOrCtrl+R'
-      },
-    ];
+  if (process.env.NODE_ENV === 'development') {
+    cardWindow.webContents.openDevTools({ mode: 'detach' });
+  }
 
-    const isDevelopment = process.env.NODE_ENV === 'development';
-    if (isDevelopment) {
-        menuTemplate.push({
-          label: '开发者模式',
-          click: () => cardWindow.webContents.openDevTools({ mode: 'detach' }),
-          accelerator: ""
-        });
-    }
-
-    const menu = Menu.buildFromTemplate(menuTemplate);
-    cardWindow.setMenu(menu);
-    cardWindow.setTitle('器物卡片');
+  windows.set(subWindowId, cardWindow);
+  cardWindow.on('closed', () => {
+    windows.delete(subWindowId);
+  });
 
     return { success: true };
   } catch (error) {
     console.error('打开新窗口失败:', error);
     return { success: false };
+  }
+});
+
+// 菜单功能
+ipcMain.on('window-minimize', (event, windowId) => {
+  const targetWindow = windows.get(windowId);
+  if (targetWindow) {
+    targetWindow.minimize();
+  }
+});
+
+ipcMain.on('window-close', (event, windowId) => {
+  const targetWindow = windows.get(windowId);
+  if (targetWindow) {
+    targetWindow.close();
+  }
+});
+
+ipcMain.handle('get-always-on-top', (event, windowId) => {
+  const targetWindow = windows.get(windowId);
+  if (targetWindow) {
+    const isAlwaysOnTop = targetWindow.isAlwaysOnTop();
+    return isAlwaysOnTop;
+  }
+});
+
+ipcMain.on('toggle-always-on-top', (event, windowId) => {
+  const targetWindow = windows.get(windowId);
+  if (targetWindow) {
+    const isAlwaysOnTop = targetWindow.isAlwaysOnTop();
+    targetWindow.setAlwaysOnTop(!isAlwaysOnTop);
+  }
+});
+
+ipcMain.on('menu-action', (event, action) => {
+  switch (action) {
+    case 'login':
+      mainWindow.webContents.send('navigate', 'login');
+      break;
+    case 'config':
+      mainWindow.webContents.send('navigate', 'config');
+      break;
+    case 'reload':
+      mainWindow.webContents.reload();
+      break;
+    default:
+      console.error(`Unknown menu action: ${action}`);
   }
 });

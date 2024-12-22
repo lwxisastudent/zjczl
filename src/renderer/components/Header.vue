@@ -29,13 +29,11 @@
   </script>
   
   <style scoped>
-.header {
-  position: fixed;
-  top: 0;
+.header { 
   left: 0;
-  width: 100%;
-  background-color: white;
-  color: black;
+  background-color: black;
+  color: white;
+  margin: 0;
   padding: 0px 20px;
   display: flex;
   justify-content: space-between;
@@ -48,11 +46,13 @@
   font-size: 20px;
 }
 
-.close-btn {
+button.close-btn {
   font-size: 30px;
-  background: none;
+  --bg-color: transparent;
+  --border-color: transparent;
   border: none;
-  color: black;
+  color: white;
+  padding: 0;
   cursor: pointer;
 }
   </style>

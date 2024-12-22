@@ -14,15 +14,15 @@
       <div class="form-row">
         <label><span class="require">*</span>python.exe运行路径 (填python为系统默认)</label>
         <input style="flex: 1;" type="text" v-model="pythonFile" readonly @click="selectFile('pythonFile')" />
-        <button @click="resetPythonFile">恢复默认</button>
+        <button class="operate-button" @click="resetPythonFile">恢复默认</button>
         <label class="tips">执行脚本需要openpyxl和pandas模块，请提前安装：<span style="white-space: nowrap;">pip install openpyxl pandas</span></label>
       </div>
       <div class="form-row">
         <label>替换规则 (每行一项，格式：替换前|替换后)</label>
         <textarea v-model="replacementRulesText" placeholder="例如：瓦尾,凸面斜绳纹+素面|瓦尾,凸面特殊"></textarea>
-        <button @click="resetReplacementRule" style="margin: 0; margin-left: auto;">恢复默认</button>
+        <button class="operate-button" @click="resetReplacementRule" style="margin: 0; margin-left: auto;">恢复默认</button>
       </div>
-      <button @click="saveConfig">保存</button>
+      <button style="margin-top: 20px;" @click="saveConfig">保存</button>
     </div>
   </div>
 </template>
@@ -154,16 +154,10 @@ export default {
   margin-left: 10px;
   height: 24px;
   width: 80px;
-  white-space: nowrap;
   line-height: 24px;
-  display: flex;
-  justify-content: center;
-  align-items: center;
 }
 
 .require {
-  position: absolute;
-  left: 18px;
   color: red;
 }
 

@@ -60,13 +60,15 @@ def main():
         total_photos = len(total_photo_files)
         total_photo_indices = data[3].dropna().astype(str).str.split(',')
         total_max_index = max(
-            int(index.strip()) for indices in total_photo_indices for index in indices
+            int(index.strip() or 0) for indices in total_photo_indices for index in indices
         )
         if total_max_index * 2 != total_photos:
             raise ValueError(f"整体摄影当前照片数 {total_photos}，照片序号最大为 {int(total_max_index)}。请重新检查。")
 
         sample_photos = len(sample_photo_files)
         sample_max_index = pd.to_numeric(data[5], errors='coerce').max()
+        if pd.isna(sample_max_index):
+            sample_max_index = 0
         if sample_max_index * 2 != sample_photos:
             raise ValueError(f"标本照当前照片数 {sample_photos}，照片序号最大为 {int(sample_max_index)}。请重新检查。")
 

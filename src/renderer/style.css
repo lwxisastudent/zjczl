@@ -113,6 +113,10 @@ li {
     transition: border-color 0.25s;
 }
 
+li.focused {
+    border-bottom: 1px solid var(--bg);
+}
+
 .card {
     padding: 2em;
 }

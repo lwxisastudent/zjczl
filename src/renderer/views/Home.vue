@@ -1,6 +1,11 @@
 <template>
   <div>
     <div class="content">
+      <div class="form-row" style="padding: 0; justify-content: space-between;">
+        <label>已整理 {{ achievement.exports }} 层</label>
+        <label>分类照 {{ achievement.total / 2 }} 组</label>
+        <label>标本照 {{ achievement.sample / 2 }} 组</label>
+      </div>
       <div class="form-row">
         <label  style="align-items: center;
         display: flex;">
@@ -13,7 +18,8 @@
       />
       </div>
       <ul class="folder-list">
-        <li v-for="(item, index) in folderList" v-show="(!hideExported || !item.hasExport) && (!Boolean(searchQuery) || item.name.includes(searchQuery))" :key="index" @click="selectData(item)" :class="{'focused': currentFolder.absolutePath === item.absolutePath}">
+        <li v-for="(item, index) in folderList" v-show="(!hideExported || !item.hasExport) && (!Boolean(searchQuery) || item.name.includes(searchQuery))" :key="index" @click="selectData(item)" :class="{'focused': currentFolder.absolutePath === item.absolutePath}"
+        :ref="'folder-' + index">
           <span style="width: 200px;">{{ item.name }}</span>
           <span style="width: 70px; margin-right: 5px; white-space: nowrap;" :class="item.hasConfig ? 'configed' : 'none-configed'"></span>
           <span style="width: 70px; white-space: nowrap;" :class="item.hasExport ? 'exported' : 'unexported'"></span>
@@ -68,6 +74,7 @@ const path = require('path');
 import '@fortawesome/fontawesome-free/css/all.min.css';
 import * as XLSX from 'xlsx';
 import { useGlobalStore } from '../stores/global';
+import { nextTick } from 'vue';
 
 export default {
   data() {
@@ -76,7 +83,12 @@ export default {
       folderList: [],
       currentFolder: {},
       login: false,
-      searchQuery: ''
+      searchQuery: '',
+      achievement: {
+        total: 0,
+        sample: 0,
+        exports: 0
+      }
     };
   },
   methods: {
@@ -109,16 +121,13 @@ export default {
           };
         });
 
-        const currentIndex = store.getCurrentIndex();
-        if (currentIndex >= 0 && currentIndex < this.folderList.length) {
-          const selectedFolder = this.folderList[currentIndex];
-          if(selectedFolder){
-            await this.selectData(selectedFolder);
-          }
-        }else{
-          this.currentFolder = {};
-        }
-
+        this.achievement = {
+        total: 0,
+        sample: 0,
+        exports: this.folderList.filter(folder => folder.hasExport).length
+      };
+      
+      this.countPhotos(config.exportFolder);
       } catch (error) {
         console.error('获取配置失败:', error);
       }
@@ -130,11 +139,54 @@ export default {
       }catch (error) {
         console.error('获取登录信息失败:', error);
       }
+
+        const currentIndex = store.getCurrentIndex();
+        if (currentIndex >= 0 && currentIndex < this.folderList.length) {
+          const selectedFolder = this.folderList[currentIndex];
+          if(selectedFolder){
+            await this.selectData(selectedFolder);
+
+          await nextTick();
+          this.scrollToIndex(currentIndex);
+          }
+        }else{
+          this.currentFolder = {};
+        }
     },
     updateHideExported(){
       const store = useGlobalStore();
       store.setHideExported(this.hideExported);
     },
+  scrollToIndex(index) {
+    const target = this.$refs[`folder-${index}`]?.[0];
+    if (target) {
+      target.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }
+  },
+  async countPhotos(folder) {
+    const fs = require('fs').promises;
+    const path = require('path');
+
+    try {
+      const entries = await fs.readdir(folder, { withFileTypes: true });
+
+      for (const entry of entries) {
+        const fullPath = path.join(folder, entry.name);
+
+        if (entry.isDirectory()) {
+          await this.countPhotos(fullPath);
+        } else if (entry.isFile() && entry.name.toLowerCase().endsWith('.jpg')) {
+          if (entry.name.includes('标')) {
+            this.achievement.sample++;
+          } else {
+            this.achievement.total++;
+          }
+        }
+      }
+    } catch (error) {
+      console.error('读取文件夹失败:', error);
+    }
+  },
     async selectFile(key) {
       try {
         const config = await ipcRenderer.invoke('get-config');
@@ -397,6 +449,9 @@ export default {
 </script>
 
 <style scoped>
+.content {
+  padding-top: 0;
+}
 .tips {
   color: #ccc;
   display: flex;

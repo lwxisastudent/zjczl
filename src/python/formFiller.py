@@ -120,7 +120,7 @@ def write_to_excel(t, data, structure_rows, structure_cols, start_position, outp
 
 def main():
     try:
-        sourceFolder = sys.argv[1]
+        #sourceFolder = sys.argv[1]
         exportFolder = sys.argv[4]
         formFile = sys.argv[2]
         sheetName = sys.argv[3]
@@ -154,11 +154,19 @@ def main():
         tongwa_output = os.path.join(exportFolder, f"{tanfang_number}{yiji_unit_number}筒瓦表.xlsx")
         banwa_output = os.path.join(exportFolder, f"{tanfang_number}{yiji_unit_number}板瓦表.xlsx")
 
-        write_excel_template(tongwa_base64, tongwa_output)
-        write_to_excel('筒瓦', tongwa_data, tongwa_structure_rows, tongwa_structure_cols, (9, 4), tongwa_output, tongwa_header)
+        if os.path.exists(tongwa_output):
+            os.remove(tongwa_output)
+
+        if os.path.exists(banwa_output):
+            os.remove(banwa_output)
+
+        if tongwa_data:
+            write_excel_template(tongwa_base64, tongwa_output)
+            write_to_excel('筒瓦', tongwa_data, tongwa_structure_rows, tongwa_structure_cols, (9, 4), tongwa_output, tongwa_header)
         
-        write_excel_template(banwa_base64, banwa_output)
-        write_to_excel('板瓦', banwa_data, banwa_structure_rows, banwa_structure_cols, (9, 3), banwa_output, banwa_header)
+        if banwa_data:
+            write_excel_template(banwa_base64, banwa_output)
+            write_to_excel('板瓦', banwa_data, banwa_structure_rows, banwa_structure_cols, (9, 3), banwa_output, banwa_header)
 
         print("表格已导出")
 

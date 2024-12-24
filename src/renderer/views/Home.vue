@@ -60,7 +60,7 @@
         <button @click="saveConfig">保存配置</button>
         <button :disabled="!currentFolder.absolutePath || !currentFolder.outputDir || !currentFolder.dataXlsxDir || !currentFolder.table" @click="runScript('organizer')">整理照片</button>
         <button :disabled="!currentFolder.absolutePath || !currentFolder.outputDir || !currentFolder.dataXlsxDir || !currentFolder.table" @click="runScript('formFiller')">导出表格</button>
-        <button style="margin-right: 0;" :disabled="!login || !currentFolder.tanfangno || !currentFolder.accuno" @click="goToCardPage">器物卡片</button>
+        <button style="margin-right: 0;" :disabled="!login" @click="goToCardPage">器物管理</button>
       </div>
       <label class="tips">整理照片前请先检查分类，然后将表格用Excel手动排序表格，先升序排列C列，然后升序排列B列，然后升序排列A列，保证顺序统一</label>
     </div>

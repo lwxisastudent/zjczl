@@ -146,7 +146,9 @@
             this.list = sd.list;
             this.dataXlsxDir = sd.dataXlsxDir;
             this.tableName = sd.tableName;
-            this.fetchOtherParts();
+            if(this.dataXlsxDir && this.tableName){
+              this.fetchOtherParts();
+            }
         }
       }
     },

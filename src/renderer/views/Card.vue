@@ -307,6 +307,7 @@
             projectName: this.loginInfo.projectName,
             proUserType: 0
           };
+          delete postData.images;
   
           const response = await axios.post(
             "http://www.kggis.com/kgfj/qwcard/saveOrUpdate.htm",

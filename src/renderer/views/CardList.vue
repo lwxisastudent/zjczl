@@ -8,7 +8,7 @@
     <label style="width: 75px;">单位号</label>
     <label style="width: 75px;">堆积号</label>
   </div>
-  <div class="form-row" style="margin-bottom: 20px;">
+  <div class="form-row" style="margin-bottom: 10px;">
     <input
       v-model="searchParams.tanfangno"
       placeholder="探方号"
@@ -31,35 +31,56 @@
       {{ isLoading ? "搜索中..." : "搜索" }}
     </button>
   </div>
+      <div class="form-row" style="margin-bottom: 20px;">
+        <label>标本图片文件夹：</label>
+        <input type="text" style="flex: 1;" v-model="exportFolder" readonly @click="selectFolder('exportFolder')" />
+      </div>
 
   <!-- 批量导入功能 -->
-  <div v-if="totalImports > 0">
+  <div v-if="totalImports > 0 || (totalItems > 0 && Boolean(exportFolder))" style="margin-bottom: 20px;">
+
+    <div v-if="totalImports > 0">
     <div style="margin-top: 10px; display: flex; width:100%;">
       批量导入：<input 
         type="number" 
         :disabled="!isPaused"
         v-model.number="currentImportIndex" 
         style="width: 30px;" 
-        :max="totalImports - 1" 
-        :min="0"
+        :max="totalImports" 
+        :min="1"
       />  / {{ totalImports }}
       <button class="import-button" @click="continueBatchImport" style="margin: 0 10px;" :disabled="!isPaused">继续</button>
       <button class="import-button"  @click="stopBatchImport" :disabled="isPaused">暂停</button>
     </div>
   </div>
-  <div v-if="totalImports > 0 && list.length > 0" style="margin-bottom: 20px;">
-    <div style=" display: flex; width:100%;">
+  <div v-if="totalImports > 0 && list.length > 0">
+    <div style="display: flex; width:100%;">
           批量填写：<input 
         type="number" 
         :disabled="!isOtherPaused"
         v-model.number="currentOtherImportIndex" 
         style="width: 30px;" 
-        :max="totalImports - 1" 
-        :min="0"
+        :max="totalImports" 
+        :min="1"
       /> / {{ totalImports }}
           <button class="import-button"  @click="continueOtherBatchImport" style="margin: 0 10px;" :disabled="!isOtherPaused">继续</button>
           <button class="import-button"  @click="stopOtherBatchImport" :disabled="isOtherPaused">暂停</button>
         </div>
+  </div>
+  <div v-if="totalItems > 0 && Boolean(exportFolder)">
+    <div style="display: flex; width:100%;">
+      批量传图：<input 
+        type="number" 
+        :disabled="!isPhotoPaused"
+        v-model.number="currentPhotoImportIndex" 
+        style="width: 30px;" 
+        :max="totalItems" 
+        :min="minImportIndex"
+      />  / {{ totalItems }}
+      <button class="import-button" @click="continuePhotoImport" style="margin: 0 10px;" :disabled="!isPhotoPaused">继续</button>
+      <button class="import-button"  @click="stopPhotoImport" :disabled="isPhotoPaused">暂停</button>
+    </div>
+  </div>
   </div>
 
   <!-- 表格内容 -->
@@ -81,7 +102,7 @@
       <label style="width: 60px;">{{ item.texture }}</label>
       <label style="width: 60px;">{{ item.name }}</label>
       <label style="width: 100px;">{{ item.remark }}</label>
-  <button class="operate-button"click.stop="deleteItem(item)">删除</button>
+      <button class="operate-button" @click.stop="deleteItem(item)">删除</button>
     </div>
   </div>
   <div v-else>暂无数据</div>
@@ -90,6 +111,7 @@
   
   <script>
   import axios from "axios";
+  const path = require('path');
   const fs = require('fs');
   import Header from '../components/Header.vue';
   const { ipcRenderer } = window.require('electron');
@@ -108,14 +130,23 @@
           accuno: ""
         },
         list: [],
-        otherParts: null,
         loginInfo: null,
         isLoading: false,
-    isPaused: true,
-    currentImportIndex: 0,
+
+        dataXlsxDir: null,
+        tableName: null,
+        exportFolder: null,
+        otherParts: null,
+        
     totalImports: 0,
+    minImportIndex: 0,
+    totalItems: 0,
+    isPaused: true,
+    currentImportIndex: 1,
       isOtherPaused: true,
-      currentOtherImportIndex: 0,
+      currentOtherImportIndex: 1,
+      isPhotoPaused: true,
+      currentPhotoImportIndex: 1,
       };
     },
     async created() {
@@ -126,20 +157,42 @@
       }
       this.loginInfo = loginInfo;
   
-      const { tanfangno, accuno, dataXlsxDir, tableName } = this.$route.query;
+      const { tanfangno, accuno, dataXlsxDir, tableName, exportFolder } = this.$route.query;
+      const store = useGlobalStore();
+
+      if(exportFolder){
+        this.exportFolder = decodeURIComponent(exportFolder);
+      }else{
+        const sd = store.getCardListData();
+        if(sd){
+          this.exportFolder = sd.exportFolder;
+        }
+      }
 
       if (tanfangno && accuno) {
         this.searchParams.tanfangno = tanfangno;
-        this.searchParams.danweino = tanfangno;
-        this.searchParams.accuno = accuno;
+        
+        const match = accuno.match(/(H\d+)(.*)/);
+        if (match) {
+          this.searchParams.danweino = match[1];
+          this.searchParams.accuno = match[2];
+        } else {
+          this.searchParams.danweino = tanfangno;
+          this.searchParams.accuno = accuno;
+        }
+        
         if(dataXlsxDir && tableName){
           this.dataXlsxDir = decodeURIComponent(dataXlsxDir);
           this.tableName = decodeURIComponent(tableName);
           await this.fetchOtherParts();
+          this.minImportIndex = Math.min(...Object.keys(this.otherParts).map(key => {
+            const num = parseInt(key, 10);
+            return isNaN(num) ? 0 : num;
+          }));
+          this.currentPhotoImportIndex = this.minImportIndex;
         }
-        this.search();
+        this.search(); //搜索结束后自动保存store
       } else {
-        const store = useGlobalStore();
         const sd = store.getCardListData();
         if(sd){
             this.searchParams = sd.searchParams;
@@ -173,60 +226,58 @@
         const otherParts = {};
 
         jsonData.forEach((row, index) => {
-  const key = String(row[4] || '');
+        const key = String(row[4] || '');
 
-  if (key) {
-    const type = String(row[0] || '');
-    const part = String(row[1] || '');
-    const width = String(row[10] || '');
-    const height = String(row[11] || '');
-    const thickness = String(row[12] || '');
-    const weight = String(row[9] || '');
+        if (key) {
+          const type = String(row[0] || '');
+          const part = String(row[1] || '');
+          const width = String(row[10] || '');
+          const height = String(row[11] || '');
+          const thickness = String(row[12] || '');
+          const weight = String(row[9] || '');
 
-    const keyCommaCount = (key.match(/,/g) || []).length;
-    const widthCommaCount = (width.match(/,/g) || []).length;
-    const heightCommaCount = (height.match(/,/g) || []).length;
-    const thicknessCommaCount = (thickness.match(/,/g) || []).length;
-    const weightCommaCount = (weight.match(/,/g) || []).length;
+          const keyCommaCount = (key.match(/,/g) || []).length;
+          const widthCommaCount = (width.match(/,/g) || []).length;
+          const heightCommaCount = (height.match(/,/g) || []).length;
+          const thicknessCommaCount = (thickness.match(/,/g) || []).length;
+          const weightCommaCount = (weight.match(/,/g) || []).length;
 
-    if (keyCommaCount === widthCommaCount && 
-        keyCommaCount === heightCommaCount && 
-        keyCommaCount === thicknessCommaCount &&
-        keyCommaCount === weightCommaCount) {
-      const keys = key.split(',');
-      const widths = width.split(',');
-      const heights = height.split(',');
-      const thicknesses = thickness.split(',');
-      const weights = weight.split(',');
+          if (keyCommaCount === widthCommaCount && 
+              keyCommaCount === heightCommaCount && 
+              keyCommaCount === thicknessCommaCount &&
+              keyCommaCount === weightCommaCount) {
+            const keys = key.split(',');
+            const widths = width.split(',');
+            const heights = height.split(',');
+            const thicknesses = thickness.split(',');
+            const weights = weight.split(',');
 
-      keys.forEach((subKey, i) => {
-        otherParts[subKey.trim()] = {
-          type,
-          part,
-          weight: weights[i]?.trim() || '',
-          width: widths[i]?.trim() || '',
-          height: heights[i]?.trim() || '',
-          thickness: thicknesses[i]?.trim() || '',
-          remark: `室内整理标本：${type} ${part}，${this.formatThirdColumn(row[2])}`,
-          op: `${type}${part}残片，残宽${widths[i]?.trim()}cm，残高${heights[i]?.trim()}cm，厚度${thicknesses[i]?.trim()}cm`
-        };
+            keys.forEach((subKey, i) => {
+              otherParts[subKey.trim()] = {
+                type,
+                part,
+                weight: weights[i]?.trim() || '',
+                width: widths[i]?.trim() || '',
+                height: heights[i]?.trim() || '',
+                thickness: thicknesses[i]?.trim() || '',
+                remark: `室内整理标本：${type} ${part}，${this.formatThirdColumn(row[2])}`,
+                op: `${type}${part}残片，残宽${widths[i]?.trim()}cm，残高${heights[i]?.trim()}cm，厚度${thicknesses[i]?.trim()}cm`
+              };
+            });
+          } else {
+            otherParts[key] = {
+              type,
+              part,
+              weight: row[9] || '',
+              width,
+              height,
+              thickness,
+              remark: `室内整理标本：${type} ${part}，${this.formatThirdColumn(row[2])}`,
+              op: `${type}${part}残片，残宽${width}cm，残高${height}cm，厚度${thickness}cm`
+            };
+          }
+        }
       });
-    } else {
-      otherParts[key] = {
-        type,
-        part,
-        weight: row[9] || '',
-        width,
-        height,
-        thickness,
-        remark: `室内整理标本：${type} ${part}，${this.formatThirdColumn(row[2])}`,
-        op: `${type}${part}残片，残宽${width}cm，残高${height}cm，厚度${thickness}cm`
-      };
-    }
-  }
-});
-
-
         this.otherParts = otherParts;
       this.totalImports = Object.keys(this.otherParts).length;
         },
@@ -251,6 +302,25 @@
           return null;
         }
       },
+    selectFolder(key) {
+      try {
+        const defaultPath = this[key] || null;
+
+        const selectedFolder = ipcRenderer.sendSync('select-folder', defaultPath);
+
+        if (selectedFolder) {
+          this[key] = selectedFolder;
+          const store = useGlobalStore();
+          store.setCardListData({
+              ...store.getCardListData(),
+              exportFolder: this.exportFolder
+          });
+        }
+      } catch (error) {
+        console.error('选择文件夹失败:', error);
+        alert('无法打开文件夹选择对话框');
+      }
+    },
       async search() {
         this.isLoading = true;
         try {
@@ -295,6 +365,11 @@
             this.list = [];
           }
 
+         this.totalItems = Math.max(...this.list.map(item => {
+            const num = parseInt(item.utensilsno, 10);
+            return isNaN(num) ? 0 : num;
+          }));
+
             const store = useGlobalStore();
             store.setCardListData({
                 searchParams: this.searchParams,
@@ -302,7 +377,8 @@
                 dataXlsxDir: this.dataXlsxDir,
                 tableName: this.tableName,
                 dataXlsxDir: this.dataXlsxDir,
-                tableName: this.tableName
+                tableName: this.tableName,
+                exportFolder: this.exportFolder
             });
             this.isLoading = false;
         } catch (error) {
@@ -330,18 +406,55 @@
         const day = String(date.getDate()).padStart(2, '0');
         return `${year}-${month}-${day}`;
       },
+      async deleteItem(item) {
+    if (!confirm(`确认删除编号为 ${item.utensilsno} 的记录吗？`)) {
+      return;
+    }
 
+    try {
+      const response = await axios.post(
+        "https://www.kggis.com/kgfj/interFinishing/delete.htm",
+        new URLSearchParams({
+          id: item.id,
+          token: this.loginInfo.token,
+          projectId: this.loginInfo.projectId,
+        }).toString(),
+        {
+          headers: {
+            "Content-Type": "application/x-www-form-urlencoded",
+          },
+        }
+      );
+
+      if (response.data.code === 0) {
+        alert("删除成功！");
+        this.list = this.list.filter((i) => i.id !== item.id);
+      } else {
+        alert("删除失败");
+      }
+    } catch (error) {
+      console.error("删除失败:", error);
+      alert("网络错误，删除失败");
+    }
+  },
   async processNextImport() {
     if (this.isPaused) return;
 
-    if (this.currentImportIndex >= this.totalImports) {
+    if (this.currentImportIndex > this.totalImports) {
       alert("批量导入完成");
       this.search();
       return;
     }
 
+    
+    if (this.searchParams.accuno.includes('H')) {
+      if(!confirm('您的堆积号中包含 "H"，正确格式应该填入单位号中，如：\n探方号：T5457 单位号：H118 堆积号：①\n是否仍继续？')){
+        return;
+      }
+    }
+
     const keys = Object.keys(this.otherParts);
-    const key = keys[this.currentImportIndex];
+    const key = keys[this.currentImportIndex - 1];
     const part = this.otherParts[key];
 
     const postData = {
@@ -405,12 +518,12 @@
   },
     async processNextOtherImport() {
       if (this.isOtherPaused) return;
-      if (this.currentOtherImportIndex >= this.totalImports) {
+      if (this.currentOtherImportIndex > this.totalImports) {
         alert("批量填写其他部位完成");
         return;
       }
     const keys = Object.keys(this.otherParts);
-    const key = keys[this.currentOtherImportIndex];
+    const key = keys[this.currentOtherImportIndex - 1];
     const part = this.otherParts[key];
     const item = this.list.find(item => item.utensilsno === key);
 
@@ -515,38 +628,189 @@
     },
     stopOtherBatchImport() {
       this.isOtherPaused = true;
-    },
-    async deleteItem(item) {
-    if (!confirm(`确认删除编号为 ${item.utensilsno} 的记录吗？`)) {
+    },  async processNextPhotoImport() {
+    if (this.isPhotoPaused) return;
+
+    if (this.currentPhotoImportIndex > this.totalItems) {
+      alert("所有照片已成功导入！");
+      return;
+    }
+
+    const item = this.list.find(item => item.utensilsno === String(this.currentPhotoImportIndex));
+    if(!item){
+      alert('编号不存在');
+      return;
+    }
+    const { utensilsno, tanfangno, danweino, accuno } = item;
+
+    const photos = await this.fetchPhotos(item);
+    if (photos.length > 0) {
+      if (confirm(`编号${utensilsno}器物卡片已有照片，是否清空原有照片并继续？`)) {
+        for (const photo of photos) {
+          await this.deleteImage(photo.id);
+        }
+      } else {
+        this.stopPhotoImport();
+        return;
+      }
+    }
+
+    const baseName =
+      tanfangno === danweino
+        ? `${tanfangno}${accuno}`
+        : `${tanfangno}${danweino}${accuno}`;
+    const convexPath = path.join(
+      this.exportFolder,
+      `${baseName}标${utensilsno}凸面.JPG`
+    );
+    const concavePath = path.join(
+      this.exportFolder,
+      `${baseName}标${utensilsno}凹面.JPG`
+    );
+
+    const convexExists = fs.existsSync(convexPath);
+    const concaveExists = fs.existsSync(concavePath);
+
+    if (!convexExists || !concaveExists) {
+      alert(`编号${utensilsno}无标本照或标本照不全`);
+      this.stopPhotoImport();
       return;
     }
 
     try {
-      const response = await axios.post(
-        "https://www.kggis.com/kgfj/interFinishing/delete.htm",
-        new URLSearchParams({
-          id: item.id,
-          token: this.loginInfo.token,
-          projectId: this.loginInfo.projectId,
-        }).toString(),
-        {
-          headers: {
-            "Content-Type": "application/x-www-form-urlencoded",
-          },
-        }
-      );
+      await this.uploadImage(convexPath, item);
+      await this.uploadImage(concavePath, item);
 
-      if (response.data.code === 0) {
-        alert("删除成功！");
-        this.list = this.list.filter((i) => i.id !== item.id);
-      } else {
-        alert("删除失败");
-      }
+      console.log(`编号 ${utensilsno} 的照片已成功上传`);
+      this.currentPhotoImportIndex++;
+      this.processNextPhotoImport();
     } catch (error) {
-      console.error("删除失败:", error);
-      alert("网络错误，删除失败");
+      console.error(`编号 ${utensilsno} 的照片上传失败:`, error);
+      alert(`编号${utensilsno}的照片上传失败，请检查网络`);
+      this.stopPhotoImport();
     }
+  },
+      async fetchPhotos(item) {
+            const loginInfo = this.loginInfo;
+            const postData = {
+              ...item,
+                token: loginInfo.token,
+                projectId: loginInfo.projectId,
+                projectName: loginInfo.projectName,
+                proUserType: 3
+            };
+
+            delete postData.ctime2;
+
+        const response = await axios.post(
+            "http://www.kggis.com/kgfj/qwcardZP/findByInterFinishing.htm",
+            postData,
+            { headers: { "Content-Type": "application/json" } }
+          );
+          
+          const data = response.data;
+          if (data && data.length > 0) {
+            return data;
+          }else{
+            return [];
+          }
+      },
+  stopPhotoImport() {
+    this.isPhotoPaused = true;
+  },
+  continuePhotoImport() {
+    this.isPhotoPaused = false;
+    this.processNextPhotoImport();
+  },
+    async deleteImage(imageId) {
+      const formData = new URLSearchParams();
+      formData.append('ids', imageId);
+      formData.append('token', this.loginInfo.token);
+      formData.append('projectId', this.loginInfo.projectId);
+      formData.append('projectName', this.loginInfo.projectName);
+      formData.append('userId', this.loginInfo.userId);
+      formData.append('userName', this.loginInfo.userName);
+      formData.append('proUserType', this.loginInfo.proUserType);
+
+      try {
+        const response = await axios.post(
+          'http://www.kggis.com/kgfj/qwcardZP/deleteAll.htm',
+          formData,
+          { headers: { 'Content-Type': 'application/x-www-form-urlencoded' } }
+        );
+        
+        if (response.status === 200) {
+          return true;
+        } else {
+          console.error('Failed to delete image:', response);
+        }
+      } catch (error) {
+        console.error('Error deleting image:', error);
+      }
+
+      return false;
+    },
+    async uploadImage(filePath, item) {
+  const stats = fs.statSync(filePath);
+  const modifiedTime = new Date(stats.mtime);
+
+  const fileName = filePath.replace(/\\/g, '/').split('/').pop();
+  const fileData = fs.readFileSync(filePath);
+  const formData = new FormData();
+  formData.append('addFile', new Blob([fileData], { type: 'image/jpeg' }), fileName);
+  formData.append('key', `${this.loginInfo.userId}-${this.loginInfo.projectId}-qwtupian--false`);
+
+  const uploadResponse = await axios.post(
+    'http://47.92.38.139/kgFileServer/UploadServlet',
+    formData,
+    { headers: { 'Content-Type': 'multipart/form-data' } }
+  );
+
+  const uploadResult = uploadResponse.data;
+  if (!uploadResult || uploadResult.length === 0) {
+    throw new Error('图片上传失败，服务器未返回结果。');
   }
+
+  const uploadedFilePath = uploadResult[0].path;
+  const postData = {
+    danweino: item.danweino,
+    qwcardId: '',
+    accuno: item.accuno,
+    utensilsno: item.utensilsno,
+    texture: item.texture,
+    name: item.name,
+    ctime: this.formatDate2(modifiedTime),
+    tanfangno: item.tanfangno,
+    zhaopianSrc: uploadedFilePath,
+    remark: '',
+    token: this.loginInfo.token,
+    projectId: this.loginInfo.projectId,
+    userId: this.loginInfo.userId,
+    userName: this.loginInfo.userName,
+    projectName: this.loginInfo.projectName,
+    proUserType: 0,
+  };
+
+  const saveResponse = await axios.post(
+    'http://www.kggis.com/kgfj/qwcardZP/add.htm',
+    postData,
+    { headers: { 'Content-Type': 'application/json' } }
+  );
+
+  if (!saveResponse.data || saveResponse.data.code !== 0) {
+    throw new Error(`提交失败: ${saveResponse.data?.message || '未知错误'}`);
+  }
+},
+  formatDate2(timestamp) {
+    const date = new Date(timestamp);
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    const hours = String(date.getHours()).padStart(2, '0');
+    const minutes = String(date.getMinutes()).padStart(2, '0');
+    const seconds = String(date.getSeconds()).padStart(2, '0');
+    return `${year}-${month}-${day} ${hours}:${minutes}:${seconds}`;
+  },
 },
   };
   </script>

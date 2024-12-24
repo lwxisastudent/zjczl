@@ -117,6 +117,20 @@
         
                 <!-- 保存按钮 -->
                 <button @click="saveCard" style="width: 100%; margin-top: 20px;">保存</button>
+                <div class="image-gallery">
+  <div class="form-row" style="margin-bottom: 0;">
+                  <button @click="uploadImage" style="margin-left: 0;">＋上传图片</button>
+                </div>
+    <div v-for="(image, index) in card.images" :key="image.id" class="image-container">
+      <img :src="getImageUrl(image.zhaopianSrc)" alt="Image" class="image" @click="openImage(image.zhaopianSrc)" />
+      <button
+        @click="deleteImage(image.id)"
+        class="delete-btn"
+      >
+        Delete
+      </button>
+    </div>
+  </div>
             </div>
             <div v-else>加载中...</div>
         </div>
@@ -125,7 +139,8 @@
   <script>
   import axios from "axios";
   import '@fortawesome/fontawesome-free/css/all.min.css';
-  const { ipcRenderer } = window.require('electron');
+  const { ipcRenderer, shell } = window.require('electron');
+  const fs = require('fs');
   
   export default {
     data() {
@@ -183,63 +198,89 @@
           );
   
           const data = response.data;
-          if (data) {
-            if(data.length > 0){
+          if (data && data.length > 0) {
               this.card = data[0];
               this.card.ctime = this.formatDate(this.card.ctime.time);
-            }else{
-              this.card = {
-                id: "",
-                xiantuID: "",
-                zhaopianID: "",
-                isaudit: "",
-                ctqwglID: "",
-                danweino: item.danweino,
-                accuno: item.accuno,
-                utensilsno: item.utensilsno,
-                texture: item.texture,
-                name: item.name,
-                buwei: "",
-                tanfangno: item.tanfangno,
-                userName: item.userName,
-                ctime: this.formatDate(Date.now()),
-                repairuserName: "",
-                chutuAddress: "",
-                caliber: "",
-                abdominalDiameter: "",
-                bottomDiameter: "",
-                high: "",
-                wallThickness: "",
-                otherParts: "",
-                weight: "",
-                capacity: "",
-                material: "",
-                forming: "",
-                dressing: "",
-                decoration: "",
-                heat: "",
-                heatOrDecoration: "",
-                useTrace: "",
-                repairTrace: "",
-                switchTrace: "",
-                morphology: "",
-                typeDescription: "",
-                typeDecoration: "",
-                typeOrnamentation: "",
-                testingOne: "",
-                testingTwo: "",
-                remark: item.remark,
-                specimen: "",
-                depositAddress: "",
-                isauditcontent: ""
-              }
-            }
-          } else {
-            console.error("未找到卡片信息");
           }
+          else{
+            this.card = {
+              id: "",
+              xiantuID: "",
+              zhaopianID: "",
+              isaudit: "",
+              ctqwglID: "",
+              danweino: item.danweino,
+              accuno: item.accuno,
+              utensilsno: item.utensilsno,
+              texture: item.texture,
+              name: item.name,
+              buwei: "",
+              tanfangno: item.tanfangno,
+              userName: item.userName,
+              ctime: this.formatDate(Date.now()),
+              repairuserName: "",
+              chutuAddress: "",
+              caliber: "",
+              abdominalDiameter: "",
+              bottomDiameter: "",
+              high: "",
+              wallThickness: "",
+              otherParts: "",
+              weight: "",
+              capacity: "",
+              material: "",
+              forming: "",
+              dressing: "",
+              decoration: "",
+              heat: "",
+              heatOrDecoration: "",
+              useTrace: "",
+              repairTrace: "",
+              switchTrace: "",
+              morphology: "",
+              typeDescription: "",
+              typeDecoration: "",
+              typeOrnamentation: "",
+              testingOne: "",
+              testingTwo: "",
+              remark: item.remark,
+              specimen: "",
+              depositAddress: "",
+              isauditcontent: ""
+            }
+          }
+
+          await this.fetchPhotos();
+
         } catch (error) {
           console.error("获取卡片信息失败:", error);
         }
+      },
+      async fetchPhotos() {
+        const item = this.item;
+            const loginInfo = this.loginInfo;
+            const postData = {
+              ...item,
+                token: loginInfo.token,
+                projectId: loginInfo.projectId,
+                projectName: loginInfo.projectName,
+                proUserType: 3
+            };
+
+            delete postData.ctime2;
+
+        const response = await axios.post(
+            "http://www.kggis.com/kgfj/qwcardZP/findByInterFinishing.htm",
+            postData,
+            { headers: { "Content-Type": "application/json" } }
+          );
+          
+          const data = response.data;
+          if (data && data.length > 0) {
+            this.card.images = data;
+          }else{
+            this.card.images = [];
+          }
       },
       fillOtherParts() {
         const otherPart = JSON.parse(this.$route.query.otherPart);
@@ -291,7 +332,124 @@
         const month = String(date.getMonth() + 1).padStart(2, '0'); // 月份从0开始，所以加1
         const day = String(date.getDate()).padStart(2, '0');
         return `${year}-${month}-${day}`;
+      },  async uploadImage() {
+    try {
+      const result = ipcRenderer.sendSync('select-file', {
+        defaultPath: '',
+        filters: [{ name: 'Image Files', extensions: ['jpg'] }],
+      });
+
+      if (!result || result.canceled) {
+        console.log('No file selected');
+        return;
       }
+
+      const filePath = result.filePaths[0];
+      const stats = fs.statSync(filePath);
+      const modifiedTime = new Date(stats.mtime);
+
+      const fileName = filePath.replace(/\\/g, '/').split('/').pop();
+      const fileData = fs.readFileSync(filePath);
+      const formData = new FormData();
+      formData.append('addFile', new Blob([fileData], { type: 'image/jpeg' }), fileName);
+      formData.append('key', `${this.loginInfo.userId}-${this.loginInfo.projectId}-qwtupian--false`)
+
+      const uploadResponse = await axios.post(
+        'http://47.92.38.139/kgFileServer/UploadServlet',
+        formData,
+        { headers: { 'Content-Type': 'multipart/form-data' } }
+      );
+
+      const uploadResult = uploadResponse.data;
+      if (!uploadResult || uploadResult.length === 0) {
+        alert('图片上传失败');
+        console.error('Upload failed');
+        return;
+      }
+
+      const uploadedFilePath = uploadResult[0].path;
+
+      const remark = await ipcRenderer.invoke("show-prompt");
+      const postData = {
+        danweino: this.card.danweino,
+        qwcardId: '',
+        accuno: this.card.accuno,
+        utensilsno: this.card.utensilsno,
+        texture: this.card.texture,
+        name: this.card.name,
+        ctime: this.formatDate2(modifiedTime),
+        tanfangno: this.card.tanfangno,
+        zhaopianSrc: uploadedFilePath,
+        remark,
+        token: this.loginInfo.token,
+        projectId: this.loginInfo.projectId,
+        userId: this.loginInfo.userId,
+        userName: this.loginInfo.userName,
+        projectName: this.loginInfo.projectName,
+        proUserType: 0,
+      };
+
+      const saveResponse = await axios.post(
+        'http://www.kggis.com/kgfj/qwcardZP/add.htm',
+        postData,
+        { headers: { 'Content-Type': 'application/json' } }
+      );
+
+      if (saveResponse.data && saveResponse.data.code === 0) {
+        this.fetchPhotos();
+        alert('提交成功');
+      } else {
+        console.error('提交失败', saveResponse.data);
+      }
+    } catch (error) {
+      console.error('Error uploading image:', error);
+    }
+  },
+  formatDate2(timestamp) {
+    const date = new Date(timestamp);
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    const hours = String(date.getHours()).padStart(2, '0');
+    const minutes = String(date.getMinutes()).padStart(2, '0');
+    const seconds = String(date.getSeconds()).padStart(2, '0');
+    return `${year}-${month}-${day} ${hours}:${minutes}:${seconds}`;
+  },
+      getImageUrl(imagePath) {
+      return `http://47.92.38.139/kgFileServer/${imagePath}`;
+    },    openImage(imagePath) {
+      const imageUrl = this.getImageUrl(imagePath);
+      shell.openExternal(imageUrl).catch((error) => {
+        console.error('Failed to open image in browser:', error);
+      });
+    },
+    async deleteImage(imageId) {
+      const formData = new URLSearchParams();
+      formData.append('ids', imageId);
+      formData.append('token', this.loginInfo.token);
+      formData.append('projectId', this.loginInfo.projectId);
+      formData.append('projectName', this.loginInfo.projectName);
+      formData.append('userId', this.loginInfo.userId);
+      formData.append('userName', this.loginInfo.userName);
+      formData.append('proUserType', this.loginInfo.proUserType);
+
+      try {
+        const response = await axios.post(
+          'http://www.kggis.com/kgfj/qwcardZP/deleteAll.htm',
+          formData,
+          { headers: { 'Content-Type': 'application/x-www-form-urlencoded' } }
+        );
+        
+        if (response.status === 200) {
+          this.card.images = this.card.images.filter(image => image.id !== imageId);
+          alert('删除成功');
+        } else {
+          console.error('Failed to delete image:', response);
+        }
+      } catch (error) {
+        console.error('Error deleting image:', error);
+      }
+    },
     },
   };
   </script>
@@ -327,8 +485,6 @@
     width: 50%;
     height: 100px;
     padding: 10px;
-    border: 1px solid #ccc;
-    border-radius: 4px;
     font-size: 14px;
     flex: 1;
   white-space: pre-wrap;
@@ -346,6 +502,42 @@
   height: 20px;
   width: 80px;
   line-height: 24px;
+}
+
+.image-gallery {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 20px;
+}
+
+.image-container {
+  position: relative;
+  display: inline-block;
+}
+
+.image {
+  width: 200px;
+  height: 200px;
+  object-fit: cover;
+  --border-color: var(--bg);
+    box-shadow: 0 .2em var(--border-color), 0 -.2em var(--border-color), .2em 0 var(--border-color), -.2em 0 var(--border-color);
+}
+
+.delete-btn {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  background-color: rgba(255, 0, 0, 0.7);
+  color: white;
+  border: none;
+  padding: 5px 10px;
+  cursor: pointer;
+  border-radius: 5px;
+}
+
+.delete-btn:hover {
+  background-color: rgba(255, 0, 0, 1);
 }
   </style>
   

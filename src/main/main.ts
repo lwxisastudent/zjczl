@@ -2,6 +2,7 @@ const { app, BrowserWindow, ipcMain, dialog } = require('electron');
 const path = require('path');
 const fs = require('fs');
 const { exec } = require('child_process');
+const electronPrompt = require('electron-prompt');
 const { v4: uuidv4 } = require('uuid');
 const config = require('./config');
 const account = require('./account');
@@ -82,6 +83,23 @@ ipcMain.on('select-file', (event, { defaultPath = null, filters = [] }) => {
   } catch (error) {
     console.error('Error opening file dialog:', error);
     event.returnValue = { canceled: true, filePaths: [] };
+  }
+});
+
+ipcMain.handle('show-prompt', async () => {
+  try {
+    const result = await electronPrompt({
+      title: '添加备注',
+      label: '请输入图片备注',
+      type: 'input',
+      inputAttrs: {
+        type: 'text'
+      }
+    });
+    return result;
+  } catch (error) {
+    console.error('Error showing prompt:', error);
+    return null;
   }
 });
 

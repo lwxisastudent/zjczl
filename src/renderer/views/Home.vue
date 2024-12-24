@@ -411,14 +411,19 @@ export default {
         const dataXlsxDir = path.join(config.sourceFolder, this.currentFolder.dataXlsxDir);
         const tableName = this.currentFolder.table;
 
-        this.$router.push({
-          path: '/cardList',
-          query: {
+        const query = {
             tanfangno: this.currentFolder.tanfangno,
             accuno: this.currentFolder.accuno,
             dataXlsxDir: encodeURIComponent(dataXlsxDir),
             tableName: encodeURIComponent(tableName)
+          };
+          if(this.currentFolder.hasExport){
+            query.exportFolder = encodeURIComponent(path.join(config.exportFolder, this.currentFolder.outputDir, '标本照'));
+            console.log(query);
           }
+        this.$router.push({
+          path: '/cardList',
+          query
         });
       } catch (error) {
           this.$router.push({

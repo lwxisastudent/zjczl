@@ -164,8 +164,11 @@
         this.exportFolder = decodeURIComponent(exportFolder);
       }else{
         const sd = store.getCardListData();
-        if(sd){
+        if(sd && sd.exportFolder){
           this.exportFolder = sd.exportFolder;
+        }else{
+          const config = await ipcRenderer.invoke('get-config');
+          this.exportFolder = path.resolve(config.exportFolder);
         }
       }
 

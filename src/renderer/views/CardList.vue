@@ -31,9 +31,13 @@
       {{ isLoading ? "搜索中..." : "搜索" }}
     </button>
   </div>
-      <div class="form-row" style="margin-bottom: 20px;">
-        <label>标本图片文件夹：</label>
+      <div class="form-row">
+        <label style="width: 120px;">标本图片文件夹：</label>
         <input type="text" style="flex: 1;" v-model="exportFolder" readonly @click="selectFolder('exportFolder')" />
+      </div>
+      <div class="form-row" style="margin-bottom: 20px;">
+        <label style="width: 120px;">标本图片前缀：</label>
+        <input type="text" style="flex: 1;" v-model="samplePrefix" />
       </div>
 
   <!-- 批量导入功能 -->
@@ -49,7 +53,7 @@
         :max="totalImports" 
         :min="1"
       />  / {{ totalImports }}
-      <button class="import-button" @click="continueBatchImport" style="margin: 0 10px;" :disabled="!isPaused">继续</button>
+      <button class="import-button" @click="continueBatchImport" style="margin: 0 10px; margin-left: auto;" :disabled="!isPaused">继续</button>
       <button class="import-button"  @click="stopBatchImport" :disabled="isPaused">暂停</button>
     </div>
   </div>
@@ -63,7 +67,7 @@
         :max="totalImports" 
         :min="1"
       /> / {{ totalImports }}
-          <button class="import-button"  @click="continueOtherBatchImport" style="margin: 0 10px;" :disabled="!isOtherPaused">继续</button>
+          <button class="import-button"  @click="continueOtherBatchImport" style="margin: 0 10px; margin-left: auto;" :disabled="!isOtherPaused">继续</button>
           <button class="import-button"  @click="stopOtherBatchImport" :disabled="isOtherPaused">暂停</button>
         </div>
   </div>
@@ -77,7 +81,7 @@
         :max="totalItems" 
         :min="minImportIndex"
       />  / {{ totalItems }}
-      <button class="import-button" @click="continuePhotoImport" style="margin: 0 10px;" :disabled="!isPhotoPaused">继续</button>
+      <button class="import-button" @click="continuePhotoImport" style="margin: 0 10px; margin-left: auto;" :disabled="!isPhotoPaused">继续</button>
       <button class="import-button"  @click="stopPhotoImport" :disabled="isPhotoPaused">暂停</button>
     </div>
   </div>
@@ -136,6 +140,7 @@
         dataXlsxDir: null,
         tableName: null,
         exportFolder: null,
+        samplePrefix: '',
         otherParts: null,
         
     totalImports: 0,
@@ -208,7 +213,19 @@
         }
       }
     },
+  watch: {
+    "searchParams.tanfangno": "updateSamplePrefix",
+    "searchParams.danweino": "updateSamplePrefix",
+    "searchParams.accuno": "updateSamplePrefix",
+  },
     methods: {
+    updateSamplePrefix() {
+      const { tanfangno, danweino, accuno } = this.searchParams;
+      this.samplePrefix =
+        tanfangno === danweino
+          ? `${tanfangno}${accuno}`
+          : `${tanfangno}${danweino}${accuno}`;
+    },
         async goHome() {
             this.$router.push('/');
         },
@@ -360,10 +377,12 @@
   
           const data = response.data;
           if (data && data.list) {
-            this.list = response.data.list.map(item => ({
-                ...item,
-                ctime2: this.formatDate(item.ctime)
-            }));
+            this.list = response.data.list
+              .filter(item => item.accuno === accuno)
+              .map(item => ({
+                  ...item,
+                  ctime2: this.formatDate(item.ctime)
+              }));
           } else {
             this.list = [];
           }
@@ -644,7 +663,7 @@
       alert('编号不存在');
       return;
     }
-    const { utensilsno, tanfangno, danweino, accuno } = item;
+    const { utensilsno } = item;
 
     const photos = await this.fetchPhotos(item);
     if (photos.length > 0) {
@@ -658,17 +677,14 @@
       }
     }
 
-    const baseName =
-      tanfangno === danweino
-        ? `${tanfangno}${accuno}`
-        : `${tanfangno}${danweino}${accuno}`;
+    const samplePrefix = this.samplePrefix;
     const convexPath = path.join(
       this.exportFolder,
-      `${baseName}标${utensilsno}凸面.JPG`
+      `${samplePrefix}标${utensilsno}凸面.JPG`
     );
     const concavePath = path.join(
       this.exportFolder,
-      `${baseName}标${utensilsno}凹面.JPG`
+      `${samplePrefix}标${utensilsno}凹面.JPG`
     );
 
     const convexExists = fs.existsSync(convexPath);

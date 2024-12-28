@@ -49,10 +49,10 @@
         type="number" 
         :disabled="!isPaused"
         v-model.number="currentImportIndex" 
-        style="width: 30px;" 
+        style="width: 30px;"
         :max="totalImports" 
-        :min="1"
-      />  / {{ totalImports }}
+        :min="minImportIndex"
+      /> / {{ totalImports }}
       <button class="import-button" @click="continueBatchImport" style="margin: 0 10px; margin-left: auto;" :disabled="!isPaused">继续</button>
       <button class="import-button"  @click="stopBatchImport" :disabled="isPaused">暂停</button>
     </div>
@@ -63,9 +63,9 @@
         type="number" 
         :disabled="!isOtherPaused"
         v-model.number="currentOtherImportIndex" 
-        style="width: 30px;" 
+        style="width: 30px;"
         :max="totalImports" 
-        :min="1"
+        :min="minImportIndex"
       /> / {{ totalImports }}
           <button class="import-button"  @click="continueOtherBatchImport" style="margin: 0 10px; margin-left: auto;" :disabled="!isOtherPaused">继续</button>
           <button class="import-button"  @click="stopOtherBatchImport" :disabled="isOtherPaused">暂停</button>
@@ -193,10 +193,16 @@
           this.dataXlsxDir = decodeURIComponent(dataXlsxDir);
           this.tableName = decodeURIComponent(tableName);
           await this.fetchOtherParts();
+          this.totalImports = Math.max(...Object.keys(this.otherParts).map(key => {
+            const num = parseInt(key, 10);
+            return isNaN(num) ? 0 : num;
+          }));
           this.minImportIndex = Math.min(...Object.keys(this.otherParts).map(key => {
             const num = parseInt(key, 10);
             return isNaN(num) ? 0 : num;
           }));
+          this.currentImportIndex = this.minImportIndex;
+          this.currentOtherImportIndex  = this.minImportIndex;
           this.currentPhotoImportIndex = this.minImportIndex;
         }
         this.search(); //搜索结束后自动保存store
@@ -223,8 +229,8 @@
       const { tanfangno, danweino, accuno } = this.searchParams;
       this.samplePrefix =
         tanfangno === danweino
-          ? `${tanfangno}${accuno}`
-          : `${tanfangno}${danweino}${accuno}`;
+          ? `${tanfangno || ''}${accuno || ''}`
+          : `${tanfangno || ''}${danweino || ''}${accuno || ''}`;
     },
         async goHome() {
             this.$router.push('/');
@@ -299,7 +305,6 @@
         }
       });
         this.otherParts = otherParts;
-      this.totalImports = Object.keys(this.otherParts).length;
         },
   formatThirdColumn(text) {
     if (!text) return '';
@@ -467,7 +472,6 @@
       this.search();
       return;
     }
-
     
     if (this.searchParams.accuno.includes('H')) {
       if(!confirm('您的堆积号中包含 "H"，正确格式应该填入单位号中，如：\n探方号：T5457 单位号：H118 堆积号：①\n是否仍继续？')){
@@ -475,12 +479,14 @@
       }
     }
 
-    const keys = Object.keys(this.otherParts);
-    const key = keys[this.currentImportIndex - 1];
-    const part = this.otherParts[key];
+    const part = this.otherParts[String(this.currentImportIndex)];
+    if(!part){
+      alert("表格中不存在当前编号");
+      return;
+    }
 
     const postData = {
-      utensilsno: String(key),
+      utensilsno: String(this.currentImportIndex),
       texture: "陶瓦",
       name: part.type,
       danweino: this.searchParams.danweino,
@@ -508,13 +514,13 @@
       );
 
       if (response.data.code === 0) {
-        console.log(`记录 ${key} 添加成功`);
+        console.log(`记录 ${String(this.currentImportIndex)} 添加成功`);
         this.currentImportIndex++;
         this.processNextImport();
 
       } else {
-        console.error(`记录 ${key} 添加失败:`, response.data.message);
-        const skip = confirm(`编号${key}添加失败，是否已经存在？\n是否略过并继续？`);
+        console.error(`记录 ${String(this.currentImportIndex)} 添加失败:`, response.data.message);
+        const skip = confirm(`编号${String(this.currentImportIndex)}添加失败，是否已经存在？\n是否略过并继续？`);
         if (skip) {
           this.currentImportIndex++;
           this.processNextImport();
@@ -524,9 +530,9 @@
         }
       }
     } catch (error) {
-      console.error(`记录 ${key} 添加失败:`, error);
+      console.error(`记录 ${String(this.currentImportIndex)} 添加失败:`, error);
       this.stopBatchImport();
-      alert(`网络错误，编号${key}添加失败`);
+      alert(`网络错误，编号${String(this.currentImportIndex)}添加失败`);
     }
   },
 
@@ -544,10 +550,12 @@
         alert("批量填写其他部位完成");
         return;
       }
-    const keys = Object.keys(this.otherParts);
-    const key = keys[this.currentOtherImportIndex - 1];
-    const part = this.otherParts[key];
-    const item = this.list.find(item => item.utensilsno === key);
+    const part = this.otherParts[String(this.currentOtherImportIndex)];
+    if(!part){
+      alert("表格中不存在当前编号");
+      return;
+    }
+    const item = this.list.find(item => item.utensilsno === String(this.currentOtherImportIndex));
 
     const postData1 = {
               ...item,
@@ -566,7 +574,7 @@
           );
 
           if (response1.data && response1.data.length > 0) {
-            if (!confirm(`编号${key}已有器物卡片填写，是否覆盖填写“其他部位”、“重量”等部分。\n点击“取消”暂停，您可以手动改到没有冲突的编号继续填写。`)) {
+            if (!confirm(`编号${String(this.currentOtherImportIndex)}已有器物卡片填写，是否覆盖填写“其他部位”、“重量”等部分。\n点击“取消”暂停，您可以手动改到没有冲突的编号继续填写。`)) {
              this.stopOtherBatchImport();
              return;
             }
@@ -629,19 +637,19 @@
       );
 
       if (response.data.code === 0) {
-        console.log(`记录 ${key} 添加成功`);
+        console.log(`记录 ${String(this.currentOtherImportIndex)} 添加成功`);
         this.currentOtherImportIndex++;
         this.processNextOtherImport();
 
       } else {
-        console.error(`记录 ${key} 添加失败:`, response.data.message);
+        console.error(`记录 ${String(this.currentOtherImportIndex)} 添加失败:`, response.data.message);
         this.stopOtherBatchImport();
-        alert(`编号${key}填写失败，请检查是否已填过器物卡片`);
+        alert(`编号${String(this.currentOtherImportIndex)}填写失败，请检查是否已填过器物卡片`);
       }
       } catch (error) {
         console.error("导入失败:", error);
         this.stopOtherBatchImport();
-        alert(`网络错误，编号${key}填写失败`);
+        alert(`网络错误，编号${String(this.currentOtherImportIndex)}填写失败`);
       }
     },
     continueOtherBatchImport() {

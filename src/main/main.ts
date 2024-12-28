@@ -272,6 +272,13 @@ ipcMain.on('toggle-always-on-top', (event, windowId) => {
   }
 });
 
+ipcMain.on('refresh', (event, windowId) => {
+  const targetWindow = windows.get(windowId);
+  if (targetWindow) {
+    targetWindow.reload();
+  }
+});
+
 ipcMain.on('menu-action', (event, action) => {
   switch (action) {
     case 'login':
@@ -279,9 +286,6 @@ ipcMain.on('menu-action', (event, action) => {
       break;
     case 'config':
       mainWindow.webContents.send('navigate', 'config');
-      break;
-    case 'reload':
-      mainWindow.webContents.reload();
       break;
     default:
       console.error(`Unknown menu action: ${action}`);

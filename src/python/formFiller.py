@@ -52,7 +52,7 @@ def extract_classification(row, replacement_rules):
     if row[0] == '筒瓦' and row[1] == '瓦头': #不管是什么瓦舌，去掉瓦舌的部分
         if '凸面素面' in clz and '外素面' not in clz:
             return "瓦头,不明，" + clz[clz.find('凹面'):]
-        elif '凸面不明' in clz or '不明瓦舌' in clz:
+        elif '凸面不明' in clz or '不明瓦头' in clz:
             return "瓦头,不明，" + clz[clz.find('凹面'):]
         elif '凸面特殊' in clz:
             return "瓦头,特殊，" + clz[clz.find('凹面'):]

@@ -85,7 +85,11 @@ def main():
                 if row[0] == '不明':
                     target_dir = os.path.join(total_export_folder, '不明')
                 else:
+                    if pd.isna(row[0]) or row[0] not in ['筒瓦', '板瓦']:
+                        continue
+
                     if pd.isna(row[0]) or pd.isna(row[1]) or pd.isna(row[2]) or pd.isna(row[3]):
+                        print(f"第{i+1}行缺少分类信息或整体摄影信息")
                         continue
                     
                     first_dir = os.path.join(total_export_folder, str(row[0])).strip()
@@ -140,16 +144,13 @@ def main():
                 if pd.isna(row[4]) or pd.isna(row[5]):
                     continue
 
-                # 将 row[4] 和 row[5] 转换为字符串并按逗号分割
                 markers = str(row[4]).split(',')
                 photos = str(row[5]).split(',')
 
-                # 确保逗号数量相等
                 if len(markers) != len(photos):
                     print(f"第 {i+1} 行数据错误：标本编号和照片索引数量不匹配")
                     continue
 
-                # 遍历每个标本编号和对应的照片索引
                 for marker, photo_index in zip(markers, photos):
                     if pd.isna(marker) or pd.isna(photo_index):
                         continue

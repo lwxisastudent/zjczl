@@ -1,7 +1,7 @@
 <template>
     <div class="menu">
       <button v-if="!subWindow" @click="menuAction('config')">设置</button>
-      <button @click="menuAction('reload')">刷新</button>
+      <button @click="refresh">刷新</button>
       <button @click="toggleAlwaysOnTop" v-if="top" style="--bg-color: var(--color-1-h);">取消顶部</button>
       <button @click="toggleAlwaysOnTop" v-else>保持顶部</button>
     </div>
@@ -23,8 +23,8 @@
     };
   },
     methods: {
-      menuAction(action) {
-        ipcRenderer.send('menu-action', action);
+      refresh() {
+        window.electronAPI?.refresh();
       },
       toggleAlwaysOnTop(){
         window.electronAPI?.toggleAlwaysOnTop();

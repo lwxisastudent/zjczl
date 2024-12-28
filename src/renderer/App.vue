@@ -50,7 +50,8 @@ export default {
     window.electronAPI = {
       sendMinimize: () => ipcRenderer.send('window-minimize', windowId),
       sendClose: () => ipcRenderer.send('window-close', windowId),
-      toggleAlwaysOnTop: () => ipcRenderer.send('toggle-always-on-top', windowId)
+      toggleAlwaysOnTop: () => ipcRenderer.send('toggle-always-on-top', windowId),
+      refresh: () => ipcRenderer.send('refresh', windowId)
     };
   },
   beforeUnmount() {

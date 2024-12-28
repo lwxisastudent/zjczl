@@ -18,7 +18,7 @@
         <label class="tips">执行脚本需要openpyxl和pandas模块，请提前安装：<span style="white-space: nowrap;">pip install openpyxl pandas</span></label>
       </div>
       <div class="form-row">
-        <label>替换规则 (每行一项，格式：替换前|替换后)</label>
+        <label>替换规则 (每行一项，格式：“替换前|替换后”，或“替换前|替换后|筒瓦”)</label>
         <textarea v-model="replacementRulesText" placeholder="例如：瓦尾,凸面斜绳纹+素面|瓦尾,凸面特殊"></textarea>
         <button class="operate-button" @click="resetReplacementRule" style="margin: 0; margin-left: auto;">恢复默认</button>
       </div>
@@ -97,7 +97,7 @@ export default {
         const rules = this.replacementRulesText.split('\n').filter(line => line.trim());
         const replacementRules = rules.map(line => {
           const parts = line.split('|');
-          if (parts.length !== 2) {
+          if (parts.length !== 2 && parts.length !== 3) {
             throw new Error(`替换规则格式错误: ${line}`);
           }
           return parts;

@@ -46,8 +46,13 @@ def create_structure_mapping(structure_rows, structure_cols):
 def extract_classification(row, replacement_rules):
     clz = row[1].strip() + ',' + re.sub(r'/#[^/]*', '', row[2]).strip().replace(",", "，").replace("＋", "+")
     for rule in replacement_rules:
-        from_str, to_str = rule.split('|')
-        clz = clz.replace(from_str, to_str)
+        parts = rule.split('|')
+        from_str, to_str = parts[0], parts[1]
+        if len(parts) > 2:
+            if row[0] == parts[2]:
+                clz = clz.replace(from_str, to_str)
+        else:
+            clz = clz.replace(from_str, to_str)
 
     if row[0] == '筒瓦' and row[1] == '瓦头': #不管是什么瓦舌，去掉瓦舌的部分
         if '凸面素面' in clz and '外素面' not in clz:

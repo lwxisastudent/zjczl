@@ -49,7 +49,7 @@
         <button class="operate-button" :disabled="!currentFolder.dataXlsxDir || !currentFolder.table" @click="checkClassification">检查分类</button> 
       </div>
       <div class="form-row">
-        <label>输出目录          <span @click="openOutputExplorer" class="folder-icon" v-if="currentFolder.hasExport">
+        <label>输出目录          <span @click="openOutputExplorer" class="folder-icon" v-if="currentFolder.hasExport || currentFolder.onExport">
             <i class="fa-regular fa-folder" aria-hidden="true"></i>
           </span></label>
         <input type="text" v-model="currentFolder.outputDir" />
@@ -240,13 +240,10 @@ export default {
       }
     },
     async openOutputExplorer() {
-      const { hasExport, outputDir } = this.currentFolder;
-      if (hasExport) {
-        const config = await ipcRenderer.invoke('get-config');
-        const outputDirAb = path.join(config.exportFolder, outputDir);
-
-        this.openFolderInExplorer(outputDirAb);
-      }
+      const { outputDir } = this.currentFolder;
+      const config = await ipcRenderer.invoke('get-config');
+      const outputDirAb = path.join(config.exportFolder, outputDir);
+      this.openFolderInExplorer(outputDirAb);
     },
     async selectData(item) {
       const store = useGlobalStore();
@@ -389,6 +386,7 @@ export default {
       }
     },
     async runScript(script) {
+      this.currentFolder.onExport = true;
       const { absolutePath, dataXlsxDir, table, outputDir, tanfangno, accuno } = this.currentFolder;
       const config = await ipcRenderer.invoke('get-config');
       const args = [

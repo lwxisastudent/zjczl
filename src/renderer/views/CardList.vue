@@ -468,8 +468,9 @@
     if (this.isPaused) return;
 
     if (this.currentImportIndex > this.totalImports) {
-      alert("批量导入完成");
+      this.currentImportIndex = 999;
       this.search();
+      alert("批量导入已完成");
       return;
     }
     
@@ -547,7 +548,8 @@
     async processNextOtherImport() {
       if (this.isOtherPaused) return;
       if (this.currentOtherImportIndex > this.totalImports) {
-        alert("批量填写其他部位完成");
+        this.currentOtherImportIndex = 999;
+        alert("批量填写已完成");
         return;
       }
     const part = this.otherParts[String(this.currentOtherImportIndex)];
@@ -662,7 +664,8 @@
     if (this.isPhotoPaused) return;
 
     if (this.currentPhotoImportIndex > this.totalItems) {
-      alert("所有照片已成功导入！");
+      this.currentPhotoImportIndex = 999;
+      alert("照片上传已完成");
       return;
     }
 
@@ -672,18 +675,6 @@
       return;
     }
     const { utensilsno } = item;
-
-    const photos = await this.fetchPhotos(item);
-    if (photos.length > 0) {
-      if (confirm(`编号${utensilsno}器物卡片已有照片，是否清空原有照片并继续？`)) {
-        for (const photo of photos) {
-          await this.deleteImage(photo.id);
-        }
-      } else {
-        this.stopPhotoImport();
-        return;
-      }
-    }
 
     const samplePrefix = this.samplePrefix;
     const convexPath = path.join(
@@ -704,17 +695,29 @@
       return;
     }
 
+    const photos = await this.fetchPhotos(item);
+    if (photos.length > 0) {
+      if (confirm(`编号${utensilsno}器物卡片已有照片，是否清空原有照片并继续？`)) {
+        for (const photo of photos) {
+          await this.deleteImage(photo.id);
+        }
+      } else {
+        this.stopPhotoImport();
+        return;
+      }
+    }
+
     try {
       await this.uploadImage(convexPath, item);
       await this.uploadImage(concavePath, item);
 
-      console.log(`编号 ${utensilsno} 的照片已成功上传`);
+      console.log(`编号${utensilsno}的照片已成功上传`);
       this.currentPhotoImportIndex++;
       this.processNextPhotoImport();
     } catch (error) {
-      console.error(`编号 ${utensilsno} 的照片上传失败:`, error);
-      alert(`编号${utensilsno}的照片上传失败，请检查网络`);
+      console.error(`编号${utensilsno}的照片上传失败:`, error);
       this.stopPhotoImport();
+      alert(`编号${utensilsno}的照片上传失败，请检查网络`);
     }
   },
       async fetchPhotos(item) {

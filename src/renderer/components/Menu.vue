@@ -23,6 +23,9 @@
     };
   },
     methods: {
+      menuAction(action) {
+        ipcRenderer.send('menu-action', action);
+      },
       refresh() {
         window.electronAPI?.refresh();
       },

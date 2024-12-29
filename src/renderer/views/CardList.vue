@@ -255,19 +255,20 @@
         const key = String(row[4] || '');
 
         if (key) {
-          const type = String(row[0] || '');
+          const type = String(row[0] || '').replace(/（大）/g, '');
           const part = String(row[1] || '');
           const width = String(row[10] || '');
           const height = String(row[11] || '');
           const thickness = String(row[12] || '');
           const weight = String(row[9] || '');
+          const  bigSample= String(row[0] || '').includes('（大）');
 
           const keyCommaCount = (key.match(/,/g) || []).length;
           const widthCommaCount = (width.match(/,/g) || []).length;
           const heightCommaCount = (height.match(/,/g) || []).length;
           const thicknessCommaCount = (thickness.match(/,/g) || []).length;
           const weightCommaCount = (weight.match(/,/g) || []).length;
-
+          
           if (keyCommaCount === widthCommaCount && 
               keyCommaCount === heightCommaCount && 
               keyCommaCount === thicknessCommaCount &&
@@ -286,11 +287,15 @@
                 width: widths[i]?.trim() || '',
                 height: heights[i]?.trim() || '',
                 thickness: thicknesses[i]?.trim() || '',
-                remark: `室内整理标本：${type} ${part}，${this.formatThirdColumn(row[2])}`,
+                remark: `室内整理标本：${type}${part}，${this.formatThirdColumn(row[2], bigSample)}`,
                 op: `${type}${part}残片，残宽${widths[i]?.trim()}cm，残高${heights[i]?.trim()}cm，厚度${thicknesses[i]?.trim()}cm`
               };
             });
           } else {
+            if(keyCommaCount !== 0 || widthCommaCount !== 0 || heightCommaCount !== 0 ||
+            thicknessCommaCount !== 0 || weightCommaCount !== 0){
+              alert(`表格第${index + 1}行包含逗号但数据不全，现在批量填写可能有问题，请检查后刷新`)
+            }
             otherParts[key] = {
               type,
               part,
@@ -298,7 +303,7 @@
               width,
               height,
               thickness,
-              remark: `室内整理标本：${type} ${part}，${this.formatThirdColumn(row[2])}`,
+              remark: `室内整理标本：${type}${part}，${this.formatThirdColumn(row[2], bigSample)}`,
               op: `${type}${part}残片，残宽${width}cm，残高${height}cm，厚度${thickness}cm`
             };
           }
@@ -306,7 +311,7 @@
       });
         this.otherParts = otherParts;
         },
-  formatThirdColumn(text) {
+  formatThirdColumn(text, bigSample) {
     if (!text) return '';
     return text.trim()
       .replace(/[.,()+]/g, (match) => {
@@ -316,7 +321,8 @@
       .replace(/#/g, '')
       .replace(/\//g, '。')
       .replace(/。$/, '')
-      .concat(text.endsWith('）') || text.endsWith('。') ? '' : '。');
+      .concat(text.endsWith('）') || text.endsWith('。') ? '' : '。')
+      + (bigSample ? '（大标本）' : '');
   },
       async getloginInfo() {
         try {

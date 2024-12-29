@@ -660,7 +660,8 @@
     },
     stopOtherBatchImport() {
       this.isOtherPaused = true;
-    },  async processNextPhotoImport() {
+    },
+    async processNextPhotoImport() {
     if (this.isPhotoPaused) return;
 
     if (this.currentPhotoImportIndex > this.totalItems) {
@@ -677,19 +678,24 @@
     const { utensilsno } = item;
 
     const samplePrefix = this.samplePrefix;
-    const convexPath = path.join(
-      this.exportFolder,
-      `${samplePrefix}标${utensilsno}凸面.JPG`
-    );
-    const concavePath = path.join(
-      this.exportFolder,
-      `${samplePrefix}标${utensilsno}凹面.JPG`
-    );
+    const convexPatterns = [
+      `${samplePrefix}标${utensilsno}凸面.JPG`,
+      `${samplePrefix}标${utensilsno}凸面.jpg`,
+      `${samplePrefix}标${utensilsno}凸面（大标本）.JPG`,
+      `${samplePrefix}标${utensilsno}凸面（大标本）.jpg`
+    ];
 
-    const convexExists = fs.existsSync(convexPath);
-    const concaveExists = fs.existsSync(concavePath);
+    const concavePatterns = [
+      `${samplePrefix}标${utensilsno}凹面.JPG`,
+      `${samplePrefix}标${utensilsno}凹面.jpg`,
+      `${samplePrefix}标${utensilsno}凹面（大标本）.JPG`,
+      `${samplePrefix}标${utensilsno}凹面（大标本）.jpg`
+    ];
 
-    if (!convexExists || !concaveExists) {
+    const convexPath = this.findFile(this.exportFolder, convexPatterns);
+    const concavePath = this.findFile(this.exportFolder, concavePatterns);
+
+    if (!convexPath || !concavePath) {
       alert(`编号${utensilsno}无标本照或标本照不全`);
       this.stopPhotoImport();
       return;
@@ -745,6 +751,15 @@
             return [];
           }
       },
+      findFile(basePath, filePatterns) {
+  for (const pattern of filePatterns) {
+    const filePath = path.join(basePath, pattern);
+    if (fs.existsSync(filePath)) {
+      return filePath;
+    }
+  }
+  return null;
+},
   stopPhotoImport() {
     this.isPhotoPaused = true;
   },

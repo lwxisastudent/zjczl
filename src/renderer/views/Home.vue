@@ -41,7 +41,7 @@
         <input :disabled="!currentFolder.absolutePath" type="text" v-model="currentFolder.dataXlsxDir" readonly @click="selectFile('dataXlsxDir')" />
       </div>
       <div class="form-row">
-        <label>表格</label>
+        <label>表格（data）</label>
         <select v-model="currentFolder.table" :disabled="!currentFolder.sheetNames">
           <option value="" disabled>请选择表格</option>
           <option v-for="(sheet, index) in currentFolder.sheetNames" :key="index" :value="sheet">{{ sheet }}</option>
@@ -59,8 +59,9 @@
       <div class="buttons">
         <button @click="saveConfig">保存配置</button>
         <button :disabled="!currentFolder.absolutePath || !currentFolder.outputDir || !currentFolder.dataXlsxDir || !currentFolder.table" @click="runScript('organizer')">整理照片</button>
-        <button :disabled="!currentFolder.absolutePath || !currentFolder.outputDir || !currentFolder.dataXlsxDir || !currentFolder.table" @click="runScript('formFiller')">导出表格</button>
-        <button style="margin-right: 0;" :disabled="!login" @click="goToCardPage">器物管理</button>
+        <button :disabled="!currentFolder.absolutePath || !currentFolder.outputDir || !currentFolder.dataXlsxDir || !currentFolder.table" @click="runScript('formFiller')">统计表格</button>
+        <button :disabled="!login" @click="goToCardPage">器物管理</button>
+        <button :disabled="!currentFolder.dataXlsxDir || !currentFolder.table || !currentFolder.outputDir || !currentFolder.hasExport" style="margin-right: 0;" @click="outputData">导出data</button>
       </div>
       <label class="tips">整理照片前请先检查分类，然后将表格用Excel手动排序表格，先升序排列C列，然后升序排列B列，然后升序排列A列，保证顺序统一</label>
     </div>
@@ -98,9 +99,10 @@ export default {
       
       const config = await ipcRenderer.invoke('get-config');
       if (!config.sourceFolder || !config.exportFolder) {
-        alert('尚未配置原照片和到处目录，即将跳转到配置页！');
-        this.$router.push('/config');
-        return;
+        if(confirm('尚未配置原照片和导出目录，跳转到配置页或跳过')){
+          this.$router.push('/config');
+          return;
+        }
       }
       
       try {
@@ -432,7 +434,60 @@ export default {
             }
           });
       }
-    }
+    },
+  async outputData() {
+    try {
+      const { dataXlsxDir, table, outputDir, tanfangno, accuno } = this.currentFolder;
+
+      const config = await ipcRenderer.invoke('get-config');
+      const dataXlsxPath = path.join(config.sourceFolder, dataXlsxDir);
+
+      const fileData = fs.readFileSync(dataXlsxPath);
+      const workbook = XLSX.read(fileData, { type: 'buffer' });
+      const worksheet = workbook.Sheets[table];
+      
+      if (!worksheet) {
+        alert(`未找到表格 ${table}`)
+          return;
+      }
+
+      let jsonData = XLSX.utils.sheet_to_json(worksheet, { header: 1, defval: "" });
+      
+      // 删除照片号列
+      jsonData = jsonData.map((row) => {
+        if (Array.isArray(row)) {
+          return row.filter((_, index) => index !== 3 && index !== 5);
+        }
+        return row;
+      });
+
+      const newHeader = ['类', '部位', '纹饰', '标本', '总数', '总重', '标本数', '标本重', '标本残宽', '标本残高', '标本厚度', '选余袋号/备注'];
+      jsonData.unshift(newHeader);
+
+      const newWorksheet = XLSX.utils.json_to_sheet(jsonData, { skipHeader: true });
+      const newWorkbook = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(newWorkbook, newWorksheet, `${tanfangno}${accuno}`);
+
+      const buffer = XLSX.write(newWorkbook, { bookType: "xlsx", type: "buffer" });
+      const defaultPath = path.join(config.exportFolder, outputDir, `${tanfangno}${accuno}分类表.xlsx`);
+      
+      const result = await ipcRenderer.sendSync('save-file', {
+          defaultPath,
+          filters: [
+            { name: 'Excel File', extensions: ['xlsx'] }
+          ],
+        });
+      
+      if (result.canceled || !result.filePath) {
+        return;
+      }
+      fs.writeFileSync(result.filePath, buffer);
+
+      } catch (error) {
+        console.error('输出数据失败:', error);
+        alert('输出数据失败，请检查配置和文件路径');
+      }
+    },
   },
   mounted() {
     this.refreshFolders();
@@ -531,7 +586,7 @@ export default {
 .form-row button,
 .buttons button {
   height: 34px;
-  width: calc( (340px - 30px) / 4);
+  width: calc( (340px - 40px) / 5);
   line-height: 34px;
 }
 

@@ -59,8 +59,8 @@ def extract_classification(row, replacement_rules):
             return "瓦头,不明，" + clz[clz.find('凹面'):]
         elif '凸面不明' in clz or '不明瓦头' in clz:
             return "瓦头,不明，" + clz[clz.find('凹面'):]
-        elif '凸面特殊' in clz:
-            return "瓦头,特殊，" + clz[clz.find('凹面'):]
+    elif '凸面特殊' in clz:
+        return clz[:clz.find(',')] + ",特殊，" + clz[clz.find('凹面'):]
 
     return clz.replace("凸面", "")
 

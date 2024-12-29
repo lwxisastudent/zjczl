@@ -86,6 +86,27 @@ ipcMain.on('select-file', (event, { defaultPath = null, filters = [] }) => {
   }
 });
 
+ipcMain.on("save-file", (event, { defaultPath = null, filters = [] }) => {
+  try {
+    const filePath = dialog.showSaveDialogSync({
+      title: "保存data表格",
+      defaultPath: defaultPath,
+      buttonLabel: "保存",
+      filters,
+      message: "选择保存文件的位置",
+    });
+
+    if (filePath) {
+      event.returnValue = { canceled: false, filePath };
+    } else {
+      event.returnValue = { canceled: true, filePath: null };
+    }
+  } catch (error) {
+    console.error("Error saving file:", error);
+    event.returnValue = { canceled: true, filePath: null };
+  }
+});
+
 ipcMain.handle('show-prompt', async () => {
   try {
     const result = await electronPrompt({

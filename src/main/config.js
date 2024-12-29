@@ -19,6 +19,7 @@ const defaultConfig = {
         ['瓦尾,凸面斜绳纹+素面', '瓦尾,凸面特殊'], // 筒瓦瓦尾
         ['瓦尾,凸面交叉绳纹+素面', '瓦尾,凸面特殊'], // 筒瓦瓦尾
         ['瓦尾,凸面抹断斜绳纹+素面', '瓦尾,凸面特殊'], // 筒瓦瓦尾
+        ['瓦尾,凸面凹棱纹', '瓦尾,凸面特殊', '筒瓦'],
         ["素面+凹点纹", "凹点纹+素面"], // 凹点纹都在最下
         ["凹点纹+素面/", "素面+凹点纹/"], // 筒瓦
         ["竖菱格纹+凹点纹", "凹点纹+竖菱格纹"],
@@ -72,9 +73,10 @@ module.exports = {
             if (s.includes('凸面不明') || s.includes('不明瓦舌')) {
                 return "瓦头,不明，" + s.substring(s.indexOf('凹面'));
             }
-            if (s.includes('凸面特殊')) {
-                return "瓦头,特殊，" + s.substring(s.indexOf('凹面'));
-            }
+        }
+
+        if (s.includes('凸面特殊')) {
+            return s.substring(0, s.indexOf(',')) + ",特殊，" + s.substring(s.indexOf('凹面'));
         }
 
         return `${s.replace("凸面", "")}`;
